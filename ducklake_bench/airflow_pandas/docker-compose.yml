@@ -41,17 +41,21 @@ services:
   airflow-init:
     <<: *airflow-common
     entrypoint: /bin/bash
+    user: "0"
     command:
       - -c
       - |
-        airflow db migrate &&
-        airflow users create \
-          --username admin \
-          --password admin \
-          --firstname Admin \
-          --lastname User \
-          --role Admin \
-          --email admin@example.com || true
+        chown -R 50000:0 /opt/airflow/data &&
+        gosu airflow bash -c '
+          airflow db migrate &&
+          airflow users create \
+            --username admin \
+            --password admin \
+            --firstname Admin \
+            --lastname User \
+            --role Admin \
+            --email admin@example.com || true
+        '
     restart: on-failure
 
   airflow-webserver:

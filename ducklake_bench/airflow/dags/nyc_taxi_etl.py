@@ -45,12 +45,13 @@ with DAG(
         cur = conn.cursor()
         cur.execute("USE DATABASE BENCHMARK")
         cur.execute("USE SCHEMA PUBLIC")
-        cur.execute("CREATE OR REPLACE STAGE nyc_taxi_stage FILE_FORMAT = (TYPE = PARQUET)")
+        cur.execute("CREATE OR REPLACE FILE FORMAT parquet_fmt TYPE = PARQUET")
+        cur.execute("CREATE OR REPLACE STAGE nyc_taxi_stage FILE_FORMAT = parquet_fmt")
         cur.execute(f"PUT 'file://{local_path}' @nyc_taxi_stage AUTO_COMPRESS=FALSE")
         cur.execute("""
             CREATE OR REPLACE TABLE raw_trips AS
             SELECT * FROM @nyc_taxi_stage/yellow_tripdata_2024-01.parquet
-            (FILE_FORMAT => (TYPE = PARQUET))
+            (FILE_FORMAT => 'parquet_fmt')
         """)
         cur.execute("REMOVE @nyc_taxi_stage")
         cur.close()

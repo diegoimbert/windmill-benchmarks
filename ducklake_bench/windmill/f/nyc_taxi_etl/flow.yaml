@@ -1,0 +1,60 @@
+summary: NYC Taxi ETL Pipeline
+description: >
+  DuckLake-based ETL benchmark using NYC yellow taxi data (2024-01).
+  6 steps: ingest, clean, enrich, aggregate hourly, aggregate by zone, finalize.
+value:
+  modules:
+    - id: ingest
+      summary: 'Ingest raw NYC taxi parquet into DuckLake'
+      value:
+        type: rawscript
+        language: deno
+        content: !inline init_ingest.ts
+        input_transforms: {}
+
+    - id: clean
+      summary: 'Clean invalid rows'
+      value:
+        type: rawscript
+        language: duckdb
+        content: !inline clean_data.duckdb.sql
+        input_transforms: {}
+
+    - id: enrich
+      summary: 'Add computed columns'
+      value:
+        type: rawscript
+        language: duckdb
+        content: !inline enrich_data.duckdb.sql
+        input_transforms: {}
+
+    - id: aggregate_hourly
+      summary: 'Aggregate stats by hour of day'
+      value:
+        type: rawscript
+        language: duckdb
+        content: !inline aggregate_hourly.duckdb.sql
+        input_transforms: {}
+
+    - id: aggregate_by_zone
+      summary: 'Aggregate stats by pickup zone'
+      value:
+        type: rawscript
+        language: duckdb
+        content: !inline aggregate_by_zone.duckdb.sql
+        input_transforms: {}
+
+    - id: finalize
+      summary: 'Verify row counts and output summary'
+      value:
+        type: rawscript
+        language: deno
+        content: !inline finalize.ts
+        input_transforms: {}
+schema:
+  $schema: 'https://json-schema.org/draft/2020-12/schema'
+  type: object
+  order: []
+  properties: {}
+  required: []
+ws_error_handler_muted: false

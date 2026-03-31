@@ -1,0 +1,76 @@
+version: "3.7"
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: windmill
+    command:
+      - -c
+      - max_connections=500
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  windmill_server:
+    image: ${WM_IMAGE:-ghcr.io/windmill-labs/windmill-ee:main}
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+      - "2525:2525"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://postgres:changeme@db/windmill?sslmode=disable}
+      MODE: server
+    depends_on:
+      db:
+        condition: service_healthy
+
+  windmill_worker:
+    image: ${WM_IMAGE:-ghcr.io/windmill-labs/windmill-ee:main}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://postgres:changeme@db/windmill?sslmode=disable}
+      MODE: worker
+      WORKER_GROUP: default
+      SLEEP_QUEUE: 5
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - worker_dependency_cache:/tmp/windmill/cache
+      - worker_logs:/tmp/windmill/logs
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4096M
+
+  lsp:
+    image: ghcr.io/windmill-labs/windmill-lsp:latest
+    restart: unless-stopped
+    volumes:
+      - lsp_cache:/root/.cache
+
+  caddy:
+    image: caddy:2.5.2-alpine
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    ports:
+      - "80:80"
+    environment:
+      BASE_URL: ":80"
+
+volumes:
+  db_data:
+  worker_dependency_cache:
+  worker_logs:
+  lsp_cache:

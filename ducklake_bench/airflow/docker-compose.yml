@@ -20,6 +20,8 @@ x-airflow-common: &airflow-common
     SNOWFLAKE_SCHEMA: ${SNOWFLAKE_SCHEMA:-PUBLIC}
     SNOWFLAKE_WAREHOUSE: ${SNOWFLAKE_WAREHOUSE:-COMPUTE_WH}
     SNOWFLAKE_ROLE: ${SNOWFLAKE_ROLE:-SYSADMIN}
+    # Auto-create the Snowflake connection from env vars
+    AIRFLOW_CONN_SNOWFLAKE_DEFAULT: snowflake://${SNOWFLAKE_USER:-}:${SNOWFLAKE_PASSWORD:-}@/${SNOWFLAKE_DATABASE:-BENCHMARK}/${SNOWFLAKE_SCHEMA:-PUBLIC}?account=${SNOWFLAKE_ACCOUNT:-}&warehouse=${SNOWFLAKE_WAREHOUSE:-COMPUTE_WH}&role=${SNOWFLAKE_ROLE:-SYSADMIN}
   volumes:
     - ./dags:/opt/airflow/dags
     - ./plugins:/opt/airflow/plugins

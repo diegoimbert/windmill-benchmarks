@@ -10,6 +10,8 @@ def _run_sql(sql: str):
     from airflow.providers.snowflake.hooks.snowflake import SnowflakeHook
 
     hook = SnowflakeHook(snowflake_conn_id=SNOWFLAKE_CONN_ID)
+    hook.run("USE DATABASE BENCHMARK")
+    hook.run("USE SCHEMA PUBLIC")
     hook.run(sql)
 
 
@@ -41,6 +43,8 @@ with DAG(
         hook = SnowflakeHook(snowflake_conn_id=SNOWFLAKE_CONN_ID)
         conn = hook.get_conn()
         cur = conn.cursor()
+        cur.execute("USE DATABASE BENCHMARK")
+        cur.execute("USE SCHEMA PUBLIC")
         cur.execute("CREATE OR REPLACE STAGE nyc_taxi_stage FILE_FORMAT = (TYPE = PARQUET)")
         cur.execute(f"PUT 'file://{local_path}' @nyc_taxi_stage AUTO_COMPRESS=FALSE")
         cur.execute("""

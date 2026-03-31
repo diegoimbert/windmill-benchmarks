@@ -1,3 +1,5 @@
+ATTACH 'ducklake' AS dl; USE dl;
+
 CREATE OR REPLACE TABLE enriched_trips AS
 SELECT
   *,

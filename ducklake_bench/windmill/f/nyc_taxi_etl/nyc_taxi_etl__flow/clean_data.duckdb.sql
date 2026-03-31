@@ -1,3 +1,5 @@
+ATTACH 'ducklake' AS dl; USE dl;
+
 CREATE OR REPLACE TABLE clean_trips AS
 SELECT *
 FROM raw_trips

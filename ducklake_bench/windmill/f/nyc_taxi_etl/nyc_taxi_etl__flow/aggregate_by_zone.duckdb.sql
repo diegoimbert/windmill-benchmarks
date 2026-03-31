@@ -1,3 +1,5 @@
+ATTACH 'ducklake' AS dl; USE dl;
+
 CREATE OR REPLACE TABLE zone_stats AS
 SELECT
   PULocationID AS pickup_location_id,

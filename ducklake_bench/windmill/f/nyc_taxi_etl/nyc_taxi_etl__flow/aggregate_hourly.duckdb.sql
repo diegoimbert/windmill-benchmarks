@@ -1,3 +1,5 @@
+ATTACH 'ducklake' AS dl; USE dl;
+
 CREATE OR REPLACE TABLE hourly_stats AS
 SELECT
   EXTRACT(HOUR FROM tpep_pickup_datetime) AS hour_of_day,

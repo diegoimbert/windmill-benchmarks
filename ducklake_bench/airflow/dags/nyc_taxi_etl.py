@@ -10,9 +10,13 @@ def _run_sql(sql: str):
     from airflow.providers.snowflake.hooks.snowflake import SnowflakeHook
 
     hook = SnowflakeHook(snowflake_conn_id=SNOWFLAKE_CONN_ID)
-    hook.run("USE DATABASE BENCHMARK")
-    hook.run("USE SCHEMA PUBLIC")
-    hook.run(sql)
+    conn = hook.get_conn()
+    cur = conn.cursor()
+    cur.execute("USE DATABASE BENCHMARK")
+    cur.execute("USE SCHEMA PUBLIC")
+    cur.execute(sql)
+    cur.close()
+    conn.close()
 
 
 with DAG(

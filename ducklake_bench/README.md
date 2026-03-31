@@ -40,16 +40,9 @@ python analyze_windmill.py <flow_job_id> \
 
 ### Prerequisites
 
-1. Copy `airflow/.env` and fill in your Snowflake credentials
-2. Create the external stage in Snowflake:
+1. Fill in `airflow/.env` with your Snowflake credentials
 
-```sql
-CREATE OR REPLACE STAGE nyc_taxi_stage
-  URL = 'https://d37ci6vzurychx.cloudfront.net/trip-data/'
-  FILE_FORMAT = (TYPE = PARQUET);
-```
-
-### Run
+No Snowflake-side setup required — the ingest step creates an internal stage, downloads the parquet, PUTs it, and COPY INTOs automatically.
 
 ```bash
 cd airflow

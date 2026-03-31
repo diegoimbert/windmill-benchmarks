@@ -14,17 +14,41 @@ with DAG(
     tags=["benchmark", "ducklake-bench"],
 ) as dag:
 
-    # Step 1: Ingest raw parquet from external stage into staging table
-    ingest = SQLExecuteQueryOperator(
-        task_id="ingest",
-        conn_id=SNOWFLAKE_CONN_ID,
-        sql="""
+    # Step 1: Download parquet, PUT to internal stage, COPY INTO table
+    @task(task_id="ingest")
+    def ingest():
+        import requests as req
+        import tempfile
+        import os
+        from airflow.providers.snowflake.hooks.snowflake import SnowflakeHook
+
+        # Download parquet from public HTTPS endpoint
+        url = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet"
+        tmp_dir = tempfile.mkdtemp()
+        local_path = os.path.join(tmp_dir, "yellow_tripdata_2024-01.parquet")
+        with req.get(url, stream=True) as r:
+            r.raise_for_status()
+            with open(local_path, "wb") as f:
+                for chunk in r.iter_content(chunk_size=8 * 1024 * 1024):
+                    f.write(chunk)
+
+        hook = SnowflakeHook(snowflake_conn_id=SNOWFLAKE_CONN_ID)
+        conn = hook.get_conn()
+        cur = conn.cursor()
+        cur.execute("CREATE OR REPLACE STAGE nyc_taxi_stage FILE_FORMAT = (TYPE = PARQUET)")
+        cur.execute(f"PUT 'file://{local_path}' @nyc_taxi_stage AUTO_COMPRESS=FALSE")
+        cur.execute("""
             CREATE OR REPLACE TABLE raw_trips AS
-            SELECT *
-            FROM @nyc_taxi_stage/yellow_tripdata_2024-01.parquet
-            (FILE_FORMAT => (TYPE = PARQUET));
-        """,
-    )
+            SELECT * FROM @nyc_taxi_stage/yellow_tripdata_2024-01.parquet
+            (FILE_FORMAT => (TYPE = PARQUET))
+        """)
+        cur.execute("REMOVE @nyc_taxi_stage")
+        cur.close()
+        conn.close()
+        os.remove(local_path)
+        os.rmdir(tmp_dir)
+
+    ingest_task = ingest()
 
     # Step 2: Clean invalid rows
     clean = SQLExecuteQueryOperator(
@@ -126,4 +150,4 @@ with DAG(
 
         return counts
 
-    ingest >> clean >> enrich >> aggregate_hourly >> aggregate_by_zone >> finalize()
+    ingest_task >> clean >> enrich >> aggregate_hourly >> aggregate_by_zone >> finalize()

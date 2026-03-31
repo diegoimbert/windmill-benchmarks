@@ -54,7 +54,27 @@ with DAG(
         cur.execute(f"PUT 'file://{local_path}' @nyc_taxi_stage AUTO_COMPRESS=FALSE")
         cur.execute("""
             CREATE OR REPLACE TABLE raw_trips AS
-            SELECT * FROM @nyc_taxi_stage/yellow_tripdata_2024-01.parquet
+            SELECT
+              $1:VendorID::INT AS VendorID,
+              $1:tpep_pickup_datetime::TIMESTAMP AS tpep_pickup_datetime,
+              $1:tpep_dropoff_datetime::TIMESTAMP AS tpep_dropoff_datetime,
+              $1:passenger_count::INT AS passenger_count,
+              $1:trip_distance::FLOAT AS trip_distance,
+              $1:RatecodeID::INT AS RatecodeID,
+              $1:store_and_fwd_flag::STRING AS store_and_fwd_flag,
+              $1:PULocationID::INT AS PULocationID,
+              $1:DOLocationID::INT AS DOLocationID,
+              $1:payment_type::INT AS payment_type,
+              $1:fare_amount::FLOAT AS fare_amount,
+              $1:extra::FLOAT AS extra,
+              $1:mta_tax::FLOAT AS mta_tax,
+              $1:tip_amount::FLOAT AS tip_amount,
+              $1:tolls_amount::FLOAT AS tolls_amount,
+              $1:improvement_surcharge::FLOAT AS improvement_surcharge,
+              $1:total_amount::FLOAT AS total_amount,
+              $1:congestion_surcharge::FLOAT AS congestion_surcharge,
+              $1:Airport_fee::FLOAT AS Airport_fee
+            FROM @nyc_taxi_stage/yellow_tripdata_2024-01.parquet
             (FILE_FORMAT => 'parquet_fmt')
         """)
         cur.execute("REMOVE @nyc_taxi_stage")
@@ -140,11 +160,18 @@ with DAG(
         from airflow.providers.snowflake.hooks.snowflake import SnowflakeHook
 
         hook = SnowflakeHook(snowflake_conn_id=SNOWFLAKE_CONN_ID)
+        conn = hook.get_conn()
+        cur = conn.cursor()
+        cur.execute("USE DATABASE BENCHMARK")
+        cur.execute("USE SCHEMA PUBLIC")
         tables = ["raw_trips", "clean_trips", "enriched_trips", "hourly_stats", "zone_stats"]
         counts = {}
         for table in tables:
-            result = hook.get_first(f"SELECT COUNT(*) FROM {table}")
+            cur.execute(f"SELECT COUNT(*) FROM {table}")
+            result = cur.fetchone()
             counts[table] = result[0]
+        cur.close()
+        conn.close()
         return counts
 
     ingest() >> clean() >> enrich() >> aggregate_hourly() >> aggregate_by_zone() >> finalize()

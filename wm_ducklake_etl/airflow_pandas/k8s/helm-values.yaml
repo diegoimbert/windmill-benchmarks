@@ -1,0 +1,140 @@
+# Airflow Helm chart values for TPC-DS SF100 Pandas benchmark
+# Chart: https://airflow.apache.org/docs/helm-chart/stable/index.html
+
+executor: KubernetesExecutor
+
+defaultAirflowRepository: airflow-pandas-bench
+defaultAirflowTag: latest
+
+images:
+  airflow:
+    repository: airflow-pandas-bench
+    tag: latest
+    pullPolicy: IfNotPresent
+
+airflowVersion: "2.10.0"
+
+config:
+  core:
+    dags_are_paused_at_creation: "true"
+    load_examples: "false"
+  kubernetes_executor:
+    delete_worker_pods: "true"
+    delete_worker_pods_on_failure: "false"
+
+env:
+  - name: S3_BUCKET
+    value: "bench-data"
+  - name: S3_PREFIX
+    value: "tpcds/sf100"
+  - name: DATA_DIR
+    value: "/opt/airflow/data"
+  - name: S3_ENDPOINT
+    value: "http://minio:9000"
+  - name: AWS_ACCESS_KEY_ID
+    valueFrom:
+      secretKeyRef:
+        name: airflow-s3-credentials
+        key: access-key
+  - name: AWS_SECRET_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: airflow-s3-credentials
+        key: secret-key
+
+webserver:
+  replicas: 1
+  resources:
+    requests:
+      cpu: "1"
+      memory: 2Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+  service:
+    type: ClusterIP
+    ports:
+      - name: airflow-ui
+        port: 8080
+
+scheduler:
+  replicas: 1
+  resources:
+    requests:
+      cpu: "1"
+      memory: 2Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+
+workers:
+  replicas: 1
+  resources:
+    requests:
+      cpu: "4"
+      memory: 16Gi
+    limits:
+      cpu: "8"
+      memory: 32Gi
+  persistence:
+    enabled: true
+    size: 100Gi
+    storageClassName: ""
+
+triggerer:
+  replicas: 1
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+# KubernetesExecutor pod template defaults
+kubernetes:
+  podTemplate:
+    resources:
+      requests:
+        cpu: "4"
+        memory: 16Gi
+      limits:
+        cpu: "8"
+        memory: 32Gi
+    volumes:
+      - name: airflow-data
+        persistentVolumeClaim:
+          claimName: airflow-data-pvc
+    volumeMounts:
+      - name: airflow-data
+        mountPath: /opt/airflow/data
+
+dags:
+  persistence:
+    enabled: true
+    size: 5Gi
+    accessMode: ReadWriteMany
+  gitSync:
+    enabled: false
+
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: airflow
+    database: airflow
+
+redis:
+  enabled: false  # Not needed for KubernetesExecutor
+
+flower:
+  enabled: false  # Not needed for KubernetesExecutor
+
+# Shared data volume for parquet files
+extraVolumes:
+  - name: airflow-data
+    persistentVolumeClaim:
+      claimName: airflow-data-pvc
+
+extraVolumeMounts:
+  - name: airflow-data
+    mountPath: /opt/airflow/data

@@ -1,0 +1,40 @@
+# Windmill Helm chart values for TPC-DS ETL benchmark
+# Install: helm install windmill windmill/windmill -f helm-values.yaml -n bench
+
+windmill:
+  image: ghcr.io/windmill-labs/windmill-ee:main
+  databaseUrl: postgres://postgres:changeme@windmill-postgresql:5432/windmill?sslmode=disable
+
+  server:
+    replicas: 1
+    resources:
+      limits:
+        cpu: "4"
+        memory: 8Gi
+    nodeSelector:
+      benchmark: "true"
+
+  workers:
+    default:
+      replicas: 1
+      resources:
+        limits:
+          cpu: "8"
+          memory: 32Gi
+      nodeSelector:
+        benchmark: "true"
+      env:
+        SLEEP_QUEUE: "5"
+
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: changeme
+    database: windmill
+  primary:
+    resources:
+      limits:
+        cpu: "2"
+        memory: 4Gi
+    nodeSelector:
+      benchmark: "true"

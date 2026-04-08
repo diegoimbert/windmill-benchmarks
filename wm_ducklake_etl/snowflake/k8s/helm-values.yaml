@@ -1,0 +1,84 @@
+# Airflow Helm chart values for TPC-DS ETL benchmark (Snowflake compute)
+# Install: helm install airflow apache-airflow/airflow -f helm-values.yaml -n bench
+
+defaultAirflowRepository: apache/airflow
+defaultAirflowTag: "2.10.0-python3.11"
+
+airflowVersion: "2.10.0"
+
+executor: CeleryExecutor
+
+config:
+  core:
+    dags_are_paused_at_creation: "true"
+    load_examples: "false"
+  celery:
+    worker_concurrency: "16"
+
+# Snowflake connection — override with real credentials via env or secrets
+extraEnv:
+  - name: AIRFLOW_CONN_SNOWFLAKE_CONN_ID
+    value: "snowflake://<user>:<password>@<account>/tpcds_bench/etl?warehouse=tpcds_bench_wh&role=<role>"
+
+# DAGs mounted from a git-sync sidecar or configmap
+dags:
+  gitSync:
+    enabled: false
+
+workers:
+  replicas: 1
+  resources:
+    limits:
+      cpu: "4"
+      memory: 8Gi
+    requests:
+      cpu: "2"
+      memory: 4Gi
+  nodeSelector:
+    benchmark: "true"
+
+scheduler:
+  replicas: 1
+  resources:
+    limits:
+      cpu: "1"
+      memory: 2Gi
+    requests:
+      cpu: "500m"
+      memory: 1Gi
+  nodeSelector:
+    benchmark: "true"
+
+webserver:
+  replicas: 1
+  resources:
+    limits:
+      cpu: "1"
+      memory: 2Gi
+    requests:
+      cpu: "500m"
+      memory: 1Gi
+
+redis:
+  enabled: true
+  resources:
+    limits:
+      cpu: "500m"
+      memory: 512Mi
+
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: airflow
+    database: airflow
+  primary:
+    resources:
+      limits:
+        cpu: "1"
+        memory: 2Gi
+    nodeSelector:
+      benchmark: "true"
+
+# Extra pip packages installed at worker/scheduler startup
+extraPipPackages:
+  - apache-airflow-providers-snowflake==5.7.1

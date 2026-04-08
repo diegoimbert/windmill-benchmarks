@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: bench-limits
+  namespace: bench
+spec:
+  limits:
+    - type: Container
+      max:
+        cpu: "8"
+        memory: 32Gi

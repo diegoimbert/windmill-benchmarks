@@ -1,0 +1,576 @@
+summary: TPC-DS ETL Benchmark
+description: >
+  TPC-DS SF100 ETL benchmark. 6 stages with fan-out parallelism.
+  ~69 tasks: ingest (24) -> validate (8) -> denormalize (3) -> aggregate (7) -> queries (10) -> verify (1).
+value:
+  modules:
+    - id: stage_ingest
+      summary: 'Stage 1: Ingest 24 tables from S3'
+      value:
+        type: branchall
+        parallel: true
+        branches:
+          - summary: 'Ingest store_sales'
+            skip_failure: false
+            modules:
+              - id: ingest_store_sales
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_store_sales.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest catalog_sales'
+            skip_failure: false
+            modules:
+              - id: ingest_catalog_sales
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_catalog_sales.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest web_sales'
+            skip_failure: false
+            modules:
+              - id: ingest_web_sales
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_web_sales.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest store_returns'
+            skip_failure: false
+            modules:
+              - id: ingest_store_returns
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_store_returns.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest catalog_returns'
+            skip_failure: false
+            modules:
+              - id: ingest_catalog_returns
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_catalog_returns.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest web_returns'
+            skip_failure: false
+            modules:
+              - id: ingest_web_returns
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_web_returns.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest inventory'
+            skip_failure: false
+            modules:
+              - id: ingest_inventory
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_inventory.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest customer'
+            skip_failure: false
+            modules:
+              - id: ingest_customer
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_customer.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest customer_address'
+            skip_failure: false
+            modules:
+              - id: ingest_customer_address
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_customer_address.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest customer_demographics'
+            skip_failure: false
+            modules:
+              - id: ingest_customer_demographics
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_customer_demographics.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest household_demographics'
+            skip_failure: false
+            modules:
+              - id: ingest_household_demographics
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_household_demographics.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest item'
+            skip_failure: false
+            modules:
+              - id: ingest_item
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_item.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest store'
+            skip_failure: false
+            modules:
+              - id: ingest_store
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_store.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest date_dim'
+            skip_failure: false
+            modules:
+              - id: ingest_date_dim
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_date_dim.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest time_dim'
+            skip_failure: false
+            modules:
+              - id: ingest_time_dim
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_time_dim.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest promotion'
+            skip_failure: false
+            modules:
+              - id: ingest_promotion
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_promotion.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest warehouse'
+            skip_failure: false
+            modules:
+              - id: ingest_warehouse
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_warehouse.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest catalog_page'
+            skip_failure: false
+            modules:
+              - id: ingest_catalog_page
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_catalog_page.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest web_page'
+            skip_failure: false
+            modules:
+              - id: ingest_web_page
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_web_page.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest web_site'
+            skip_failure: false
+            modules:
+              - id: ingest_web_site
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_web_site.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest call_center'
+            skip_failure: false
+            modules:
+              - id: ingest_call_center
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_call_center.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest income_band'
+            skip_failure: false
+            modules:
+              - id: ingest_income_band
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_income_band.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest reason'
+            skip_failure: false
+            modules:
+              - id: ingest_reason
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_reason.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Ingest ship_mode'
+            skip_failure: false
+            modules:
+              - id: ingest_ship_mode
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline ingest_ship_mode.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+
+    - id: stage_validate
+      summary: 'Stage 2: Validate data quality'
+      value:
+        type: branchall
+        parallel: true
+        branches:
+          - summary: 'Validate store_sales'
+            skip_failure: false
+            modules:
+              - id: validate_store_sales
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline validate_store_sales.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Validate catalog_sales'
+            skip_failure: false
+            modules:
+              - id: validate_catalog_sales
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline validate_catalog_sales.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Validate web_sales'
+            skip_failure: false
+            modules:
+              - id: validate_web_sales
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline validate_web_sales.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Validate store_returns'
+            skip_failure: false
+            modules:
+              - id: validate_store_returns
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline validate_store_returns.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Validate catalog_returns'
+            skip_failure: false
+            modules:
+              - id: validate_catalog_returns
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline validate_catalog_returns.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Validate web_returns'
+            skip_failure: false
+            modules:
+              - id: validate_web_returns
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline validate_web_returns.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Validate inventory'
+            skip_failure: false
+            modules:
+              - id: validate_inventory
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline validate_inventory.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Validate dimensions'
+            skip_failure: false
+            modules:
+              - id: validate_dimensions
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline validate_dimensions.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+
+    - id: stage_denormalize
+      summary: 'Stage 3: Build wide denormalized tables'
+      value:
+        type: branchall
+        parallel: true
+        branches:
+          - summary: 'Denormalize store_sales'
+            skip_failure: false
+            modules:
+              - id: denorm_store_sales
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline denorm_store_sales.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Denormalize catalog_sales'
+            skip_failure: false
+            modules:
+              - id: denorm_catalog_sales
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline denorm_catalog_sales.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Denormalize web_sales'
+            skip_failure: false
+            modules:
+              - id: denorm_web_sales
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline denorm_web_sales.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+
+    - id: stage_aggregate
+      summary: 'Stage 4: Build aggregate tables'
+      value:
+        type: branchall
+        parallel: true
+        branches:
+          - summary: 'Aggregate daily_store'
+            skip_failure: false
+            modules:
+              - id: agg_daily_store
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline agg_daily_store.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Aggregate monthly_category'
+            skip_failure: false
+            modules:
+              - id: agg_monthly_category
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline agg_monthly_category.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Aggregate customer_ltv'
+            skip_failure: false
+            modules:
+              - id: agg_customer_ltv
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline agg_customer_ltv.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Aggregate channel_comparison'
+            skip_failure: false
+            modules:
+              - id: agg_channel_comparison
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline agg_channel_comparison.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Aggregate promo_roi'
+            skip_failure: false
+            modules:
+              - id: agg_promo_roi
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline agg_promo_roi.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Aggregate return_rate'
+            skip_failure: false
+            modules:
+              - id: agg_return_rate
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline agg_return_rate.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'Aggregate inventory_turnover'
+            skip_failure: false
+            modules:
+              - id: agg_inventory_turnover
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline agg_inventory_turnover.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+
+    - id: stage_queries
+      summary: 'Stage 5: Run analytical queries'
+      value:
+        type: branchall
+        parallel: true
+        branches:
+          - summary: 'TPC-DS Q03'
+            skip_failure: false
+            modules:
+              - id: q03
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline q03.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'TPC-DS Q07'
+            skip_failure: false
+            modules:
+              - id: q07
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline q07.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'TPC-DS Q19'
+            skip_failure: false
+            modules:
+              - id: q19
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline q19.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'TPC-DS Q27'
+            skip_failure: false
+            modules:
+              - id: q27
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline q27.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'TPC-DS Q34'
+            skip_failure: false
+            modules:
+              - id: q34
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline q34.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'TPC-DS Q43'
+            skip_failure: false
+            modules:
+              - id: q43
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline q43.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'TPC-DS Q46'
+            skip_failure: false
+            modules:
+              - id: q46
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline q46.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'TPC-DS Q53'
+            skip_failure: false
+            modules:
+              - id: q53
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline q53.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'TPC-DS Q67'
+            skip_failure: false
+            modules:
+              - id: q67
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline q67.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+          - summary: 'TPC-DS Q79'
+            skip_failure: false
+            modules:
+              - id: q79
+                value:
+                  type: rawscript
+                  language: duckdb
+                  content: !inline q79.duckdb.sql
+                  lock: ''
+                  input_transforms: {}
+
+    - id: stage_verify
+      summary: 'Stage 6: Verify row counts'
+      value:
+        type: rawscript
+        language: duckdb
+        content: !inline verify.duckdb.sql
+        lock: ''
+        input_transforms: {}
+schema:
+  $schema: 'https://json-schema.org/draft/2020-12/schema'
+  type: object
+  order: []
+  properties: {}
+  required: []
+ws_error_handler_muted: false

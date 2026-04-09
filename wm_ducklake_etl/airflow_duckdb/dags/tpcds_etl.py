@@ -29,6 +29,7 @@ def _get_conn() -> duckdb.DuckDBPyConnection:
     """Return an in-memory DuckDB connection attached to Ducklake."""
     conn = duckdb.connect()
     conn.execute("INSTALL httpfs; LOAD httpfs;")
+    conn.execute("INSTALL parquet; LOAD parquet;")
     conn.execute("INSTALL ducklake; LOAD ducklake;")
     conn.execute("INSTALL postgres; LOAD postgres;")
     conn.execute(f"SET s3_endpoint='{S3_ENDPOINT}';")
@@ -37,7 +38,7 @@ def _get_conn() -> duckdb.DuckDBPyConnection:
     conn.execute(f"SET s3_region='{S3_REGION}';")
     conn.execute("SET s3_use_ssl=false;")
     conn.execute("SET s3_url_style='path';")
-    conn.execute(f"ATTACH '{DUCKLAKE_CONN}' AS dl;")
+    conn.execute(f"ATTACH '{DUCKLAKE_CONN}' AS dl (DATA_PATH 's3://bench-data/ducklake/');")
     conn.execute("USE dl;")
     return conn
 
@@ -666,7 +667,7 @@ ORDER BY tbl;"""
     start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=["benchmark", "tpcds", "duckdb"],
-    max_active_tasks=24,
+    max_active_tasks=4,
     doc_md=__doc__,
 )
 def tpcds_etl():

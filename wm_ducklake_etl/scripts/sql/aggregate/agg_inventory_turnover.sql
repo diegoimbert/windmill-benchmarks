@@ -10,12 +10,10 @@ WITH avg_inventory AS (
 sales_velocity AS (
   SELECT
     ss_item_sk,
-    ss_store_sk,
-    SUM(ss_quantity) AS total_sold,
-    COUNT(DISTINCT ss_sold_date_sk) AS selling_days
+    SUM(ss_quantity) AS total_sold
   FROM store_sales
   WHERE ss_quantity IS NOT NULL
-  GROUP BY ss_item_sk, ss_store_sk
+  GROUP BY ss_item_sk
 )
 SELECT
   i.i_item_id,

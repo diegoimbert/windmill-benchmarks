@@ -16,5 +16,4 @@ UNION ALL SELECT 'customer_lifetime_value', COUNT(*) FROM customer_lifetime_valu
 UNION ALL SELECT 'channel_comparison', COUNT(*) FROM channel_comparison
 UNION ALL SELECT 'promo_roi', COUNT(*) FROM promo_roi
 UNION ALL SELECT 'return_rate_by_category', COUNT(*) FROM return_rate_by_category
-UNION ALL SELECT 'inventory_turnover', COUNT(*) FROM inventory_turnover
 ORDER BY tbl;

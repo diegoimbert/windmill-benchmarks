@@ -441,16 +441,6 @@ value:
                   content: !inline agg_return_rate.duckdb.sql
                   lock: ''
                   input_transforms: {}
-          - summary: 'Aggregate inventory_turnover'
-            skip_failure: false
-            modules:
-              - id: agg_inventory_turnover
-                value:
-                  type: rawscript
-                  language: duckdb
-                  content: !inline agg_inventory_turnover.duckdb.sql
-                  lock: ''
-                  input_transforms: {}
 
     - id: stage_queries
       summary: 'Stage 5: Run analytical queries'

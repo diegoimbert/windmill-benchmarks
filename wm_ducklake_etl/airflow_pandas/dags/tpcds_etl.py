@@ -409,38 +409,6 @@ def tpcds_etl():
         log.info("return_rate_by_category: %d rows", len(result))
         return "return_rate_by_category"
 
-    @task()
-    def agg_inventory_turnover() -> str:
-        inv = _read("inventory")[["inv_item_sk", "inv_warehouse_sk", "inv_quantity_on_hand"]]
-        avg_inv = inv.groupby(["inv_item_sk", "inv_warehouse_sk"]).agg(
-            avg_qty_on_hand=("inv_quantity_on_hand", "mean"),
-        ).reset_index()
-
-        ss = _read("store_sales")[["ss_item_sk", "ss_store_sk", "ss_quantity", "ss_sold_date_sk"]]
-        ss = ss[ss["ss_quantity"].notna()]
-        sv = ss.groupby(["ss_item_sk", "ss_store_sk"]).agg(
-            total_sold=("ss_quantity", "sum"),
-            selling_days=("ss_sold_date_sk", "nunique"),
-        ).reset_index()
-
-        item = _read("item")[["i_item_sk", "i_item_id", "i_product_name", "i_category"]]
-        w = _read("warehouse")[["w_warehouse_sk", "w_warehouse_name", "w_state"]]
-
-        result = (
-            avg_inv
-            .merge(item, left_on="inv_item_sk", right_on="i_item_sk")
-            .merge(w, left_on="inv_warehouse_sk", right_on="w_warehouse_sk")
-            .merge(sv, left_on="inv_item_sk", right_on="ss_item_sk", how="left")
-        )
-        result["total_sold"] = result["total_sold"].fillna(0)
-        result["turnover_ratio"] = (result["total_sold"] / result["avg_qty_on_hand"]).round(2).where(result["avg_qty_on_hand"] > 0, 0)
-        result = result.sort_values("turnover_ratio", ascending=False)
-        _write("inventory_turnover", result[["i_item_id", "i_product_name", "i_category",
-                                              "w_warehouse_name", "w_state", "avg_qty_on_hand",
-                                              "total_sold", "turnover_ratio"]])
-        log.info("inventory_turnover: %d rows", len(result))
-        return "inventory_turnover"
-
     # ---- Stage 5: Analytical queries -------------------------------------
     @task()
     def query_q03() -> dict:
@@ -820,7 +788,7 @@ def tpcds_etl():
             "wide_store_sales", "wide_catalog_sales", "wide_web_sales",
             "daily_sales_by_store", "monthly_sales_by_category",
             "customer_lifetime_value", "channel_comparison",
-            "promo_roi", "return_rate_by_category", "inventory_turnover",
+            "promo_roi", "return_rate_by_category",
         ]
         counts = {}
         for t in tables_to_check:
@@ -862,7 +830,6 @@ def tpcds_etl():
     a4 = agg_channel_comparison()
     a5 = agg_promo_roi()
     a6 = agg_return_rate()
-    a7 = agg_inventory_turnover()
 
     d_ss >> a1
     d_ss >> a2
@@ -871,7 +838,6 @@ def tpcds_etl():
         d >> a3
         d >> a4
     d_ss >> a6
-    d_ss >> a7
 
     q03 = query_q03()
     q07 = query_q07()
@@ -885,7 +851,7 @@ def tpcds_etl():
     q79 = query_q79()
 
     queries = [q03, q07, q19, q27, q34, q43, q46, q53, q67, q79]
-    for agg_task in [a1, a2, a3, a4, a5, a6, a7]:
+    for agg_task in [a1, a2, a3, a4, a5, a6]:
         for q in queries:
             agg_task >> q
 

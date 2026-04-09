@@ -765,54 +765,6 @@ def agg_return_rate(context: AssetExecutionContext) -> None:
         ORDER BY return_rate_pct DESC;
     """)
 
-@asset(
-    group_name="aggregate",
-    deps=[
-        ingest_inventory, ingest_item, ingest_warehouse,
-        ingest_store_sales, validate_inventory,
-    ],
-)
-def agg_inventory_turnover(context: AssetExecutionContext) -> None:
-    _exec(context, """
-        CREATE OR REPLACE TABLE inventory_turnover AS
-        WITH avg_inventory AS (
-          SELECT
-            inv_item_sk,
-            inv_warehouse_sk,
-            AVG(inv_quantity_on_hand) AS avg_qty_on_hand
-          FROM inventory
-          GROUP BY inv_item_sk, inv_warehouse_sk
-        ),
-        sales_velocity AS (
-          SELECT
-            ss_item_sk,
-            ss_store_sk,
-            SUM(ss_quantity) AS total_sold,
-            COUNT(DISTINCT ss_sold_date_sk) AS selling_days
-          FROM store_sales
-          WHERE ss_quantity IS NOT NULL
-          GROUP BY ss_item_sk, ss_store_sk
-        )
-        SELECT
-          i.i_item_id,
-          i.i_product_name,
-          i.i_category,
-          w.w_warehouse_name,
-          w.w_state,
-          ai.avg_qty_on_hand,
-          COALESCE(sv.total_sold, 0) AS total_sold,
-          CASE WHEN ai.avg_qty_on_hand > 0
-            THEN ROUND(COALESCE(sv.total_sold, 0)::DOUBLE / ai.avg_qty_on_hand, 2)
-            ELSE 0
-          END AS turnover_ratio
-        FROM avg_inventory ai
-        JOIN item i ON ai.inv_item_sk = i.i_item_sk
-        JOIN warehouse w ON ai.inv_warehouse_sk = w.w_warehouse_sk
-        LEFT JOIN sales_velocity sv ON ai.inv_item_sk = sv.ss_item_sk
-        ORDER BY turnover_ratio DESC;
-    """)
-
-
 # ===========================================================================
 # Stage 5 -- TPC-DS Analytical Queries (10 assets)
 # ===========================================================================
@@ -822,7 +774,7 @@ def agg_inventory_turnover(context: AssetExecutionContext) -> None:
     deps=[
         denorm_store_sales, agg_daily_store, agg_monthly_category,
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
-        agg_return_rate, agg_inventory_turnover,
+        agg_return_rate,
     ],
 )
 def query_q03(context: AssetExecutionContext) -> None:
@@ -843,7 +795,7 @@ def query_q03(context: AssetExecutionContext) -> None:
     deps=[
         denorm_store_sales, agg_daily_store, agg_monthly_category,
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
-        agg_return_rate, agg_inventory_turnover,
+        agg_return_rate,
     ],
 )
 def query_q07(context: AssetExecutionContext) -> None:
@@ -873,7 +825,7 @@ def query_q07(context: AssetExecutionContext) -> None:
     deps=[
         denorm_store_sales, agg_daily_store, agg_monthly_category,
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
-        agg_return_rate, agg_inventory_turnover,
+        agg_return_rate,
     ],
 )
 def query_q19(context: AssetExecutionContext) -> None:
@@ -900,7 +852,7 @@ def query_q19(context: AssetExecutionContext) -> None:
     deps=[
         denorm_store_sales, agg_daily_store, agg_monthly_category,
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
-        agg_return_rate, agg_inventory_turnover,
+        agg_return_rate,
     ],
 )
 def query_q27(context: AssetExecutionContext) -> None:
@@ -931,7 +883,7 @@ def query_q27(context: AssetExecutionContext) -> None:
     deps=[
         denorm_store_sales, agg_daily_store, agg_monthly_category,
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
-        agg_return_rate, agg_inventory_turnover,
+        agg_return_rate,
     ],
 )
 def query_q34(context: AssetExecutionContext) -> None:
@@ -964,7 +916,7 @@ def query_q34(context: AssetExecutionContext) -> None:
     deps=[
         denorm_store_sales, agg_daily_store, agg_monthly_category,
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
-        agg_return_rate, agg_inventory_turnover,
+        agg_return_rate,
     ],
 )
 def query_q43(context: AssetExecutionContext) -> None:
@@ -993,7 +945,7 @@ def query_q43(context: AssetExecutionContext) -> None:
     deps=[
         denorm_store_sales, agg_daily_store, agg_monthly_category,
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
-        agg_return_rate, agg_inventory_turnover,
+        agg_return_rate,
     ],
 )
 def query_q46(context: AssetExecutionContext) -> None:
@@ -1025,7 +977,7 @@ def query_q46(context: AssetExecutionContext) -> None:
     deps=[
         denorm_store_sales, agg_daily_store, agg_monthly_category,
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
-        agg_return_rate, agg_inventory_turnover,
+        agg_return_rate,
     ],
 )
 def query_q53(context: AssetExecutionContext) -> None:
@@ -1062,7 +1014,7 @@ def query_q53(context: AssetExecutionContext) -> None:
     deps=[
         denorm_store_sales, agg_daily_store, agg_monthly_category,
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
-        agg_return_rate, agg_inventory_turnover,
+        agg_return_rate,
     ],
 )
 def query_q67(context: AssetExecutionContext) -> None:
@@ -1091,7 +1043,7 @@ def query_q67(context: AssetExecutionContext) -> None:
     deps=[
         denorm_store_sales, agg_daily_store, agg_monthly_category,
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
-        agg_return_rate, agg_inventory_turnover,
+        agg_return_rate,
     ],
 )
 def query_q79(context: AssetExecutionContext) -> None:
@@ -1147,7 +1099,6 @@ def verify_row_counts(context: AssetExecutionContext) -> None:
         UNION ALL SELECT 'channel_comparison', COUNT(*) FROM channel_comparison
         UNION ALL SELECT 'promo_roi', COUNT(*) FROM promo_roi
         UNION ALL SELECT 'return_rate_by_category', COUNT(*) FROM return_rate_by_category
-        UNION ALL SELECT 'inventory_turnover', COUNT(*) FROM inventory_turnover
         ORDER BY tbl;
     """)
     for row in rows:

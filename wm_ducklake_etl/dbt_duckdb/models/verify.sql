@@ -18,5 +18,4 @@ UNION ALL SELECT 'agg_customer_ltv', COUNT(*) FROM {{ ref('agg_customer_ltv') }}
 UNION ALL SELECT 'agg_channel_comparison', COUNT(*) FROM {{ ref('agg_channel_comparison') }}
 UNION ALL SELECT 'agg_promo_roi', COUNT(*) FROM {{ ref('agg_promo_roi') }}
 UNION ALL SELECT 'agg_return_rate', COUNT(*) FROM {{ ref('agg_return_rate') }}
-UNION ALL SELECT 'agg_inventory_turnover', COUNT(*) FROM {{ ref('agg_inventory_turnover') }}
 ORDER BY tbl

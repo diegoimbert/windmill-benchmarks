@@ -24,7 +24,7 @@ CHANNELS = ["store_sales", "catalog_sales", "web_sales"]
 
 AGGREGATES = [
     "daily_store", "monthly_category", "customer_ltv",
-    "channel_comparison", "promo_roi", "return_rate", "inventory_turnover",
+    "channel_comparison", "promo_roi", "return_rate",
 ]
 
 QUERIES = ["q03", "q07", "q19", "q27", "q34", "q43", "q46", "q53", "q67", "q79"]

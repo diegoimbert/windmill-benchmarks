@@ -29,6 +29,8 @@ def _get_conn() -> duckdb.DuckDBPyConnection:
     """Return an in-memory DuckDB connection attached to Ducklake."""
     conn = duckdb.connect()
     conn.execute("INSTALL httpfs; LOAD httpfs;")
+    conn.execute("INSTALL ducklake; LOAD ducklake;")
+    conn.execute("INSTALL postgres; LOAD postgres;")
     conn.execute(f"SET s3_endpoint='{S3_ENDPOINT}';")
     conn.execute(f"SET s3_access_key_id='{S3_ACCESS_KEY}';")
     conn.execute(f"SET s3_secret_access_key='{S3_SECRET_KEY}';")

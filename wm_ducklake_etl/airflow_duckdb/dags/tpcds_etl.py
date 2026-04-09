@@ -22,9 +22,12 @@ S3_REGION = os.environ.get("S3_REGION", "us-east-1")
 DUCKDB_PATH = os.environ.get("DUCKDB_PATH", "/tmp/tpcds_bench.duckdb")
 
 
+DUCKLAKE_CONN = os.environ.get("DUCKLAKE_CONN", "ducklake")
+
+
 def _get_conn() -> duckdb.DuckDBPyConnection:
-    """Return a DuckDB connection with S3/httpfs configured."""
-    conn = duckdb.connect(DUCKDB_PATH)
+    """Return an in-memory DuckDB connection attached to Ducklake."""
+    conn = duckdb.connect()
     conn.execute("INSTALL httpfs; LOAD httpfs;")
     conn.execute(f"SET s3_endpoint='{S3_ENDPOINT}';")
     conn.execute(f"SET s3_access_key_id='{S3_ACCESS_KEY}';")
@@ -32,6 +35,8 @@ def _get_conn() -> duckdb.DuckDBPyConnection:
     conn.execute(f"SET s3_region='{S3_REGION}';")
     conn.execute("SET s3_use_ssl=false;")
     conn.execute("SET s3_url_style='path';")
+    conn.execute(f"ATTACH '{DUCKLAKE_CONN}' AS dl;")
+    conn.execute("USE dl;")
     return conn
 
 

@@ -14,7 +14,7 @@ x-airflow-common: &airflow-common
     S3_ACCESS_KEY: minioadmin
     S3_SECRET_KEY: minioadmin
     S3_REGION: us-east-1
-    DUCKDB_PATH: /tmp/tpcds_bench.duckdb
+    DUCKLAKE_CONN: "ducklake:postgres://airflow:airflow@postgres:5432/airflow?schema=ducklake"
   volumes:
     - ./dags:/opt/airflow/dags
   depends_on:

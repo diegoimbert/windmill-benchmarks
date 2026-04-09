@@ -49,10 +49,7 @@ services:
     volumes:
       - worker_dependency_cache:/tmp/windmill/cache
     deploy:
-      resources:
-        limits:
-          cpus: "8"
-          memory: 32G
+      replicas: 4
 
   minio:
     image: minio/minio:latest

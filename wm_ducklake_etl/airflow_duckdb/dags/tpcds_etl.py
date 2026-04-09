@@ -664,7 +664,7 @@ ORDER BY tbl;"""
     start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=["benchmark", "tpcds", "duckdb"],
-    max_active_tasks=4,
+    max_active_tasks=24,
     doc_md=__doc__,
 )
 def tpcds_etl():

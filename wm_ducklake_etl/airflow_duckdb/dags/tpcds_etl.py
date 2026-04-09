@@ -667,7 +667,7 @@ def tpcds_etl():
 
     @task_group(group_id="stage1_ingest")
     def stage1_ingest():
-        @task(task_id="ingest_{table_name}")
+        @task()
         def ingest_table(table_name: str):
             conn = _get_conn()
             try:
@@ -681,13 +681,13 @@ def tpcds_etl():
                 conn.close()
 
         for tbl in TABLES:
-            ingest_table(tbl)
+            ingest_table.override(task_id=f"ingest_{tbl}")(tbl)
 
     # ── Stage 2: Validate 8 groups ─────────────────────────────────────
 
     @task_group(group_id="stage2_validate")
     def stage2_validate():
-        @task(task_id="validate_{name}")
+        @task()
         def run_validation(name: str, sql: str):
             conn = _get_conn()
             try:
@@ -697,13 +697,13 @@ def tpcds_etl():
                 conn.close()
 
         for name, sql in VALIDATE_SQL.items():
-            run_validation(name, sql)
+            run_validation.override(task_id=f"validate_{name}")(name, sql)
 
     # ── Stage 3: Denormalize 3 sales channels ──────────────────────────
 
     @task_group(group_id="stage3_denormalize")
     def stage3_denormalize():
-        @task(task_id="denorm_{name}")
+        @task()
         def run_denorm(name: str, sql: str):
             conn = _get_conn()
             try:
@@ -717,13 +717,13 @@ def tpcds_etl():
                 conn.close()
 
         for name, sql in DENORM_SQL.items():
-            run_denorm(name, sql)
+            run_denorm.override(task_id=f"denorm_{name}")(name, sql)
 
     # ── Stage 4: Build 7 aggregate tables ──────────────────────────────
 
     @task_group(group_id="stage4_aggregate")
     def stage4_aggregate():
-        @task(task_id="agg_{name}")
+        @task()
         def run_aggregate(name: str, sql: str):
             conn = _get_conn()
             try:
@@ -737,13 +737,13 @@ def tpcds_etl():
                 conn.close()
 
         for name, sql in AGG_SQL.items():
-            run_aggregate(name, sql)
+            run_aggregate.override(task_id=f"agg_{name}")(name, sql)
 
     # ── Stage 5: Run 10 TPC-DS analytical queries ──────────────────────
 
     @task_group(group_id="stage5_queries")
     def stage5_queries():
-        @task(task_id="query_{name}")
+        @task()
         def run_query(name: str, sql: str):
             conn = _get_conn()
             try:
@@ -753,7 +753,7 @@ def tpcds_etl():
                 conn.close()
 
         for name, sql in QUERY_SQL.items():
-            run_query(name, sql)
+            run_query.override(task_id=f"query_{name}")(name, sql)
 
     # ── Stage 6: Verify row counts ─────────────────────────────────────
 

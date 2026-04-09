@@ -1,3 +1,6 @@
+ATTACH 'ducklake' AS dl;
+USE dl;
+
 CREATE OR REPLACE TABLE return_rate_by_category AS
 WITH sales AS (
   SELECT i.i_category, i.i_class,

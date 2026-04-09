@@ -1,3 +1,6 @@
+ATTACH 'ducklake' AS dl;
+USE dl;
+
 -- Validate all dimension tables: check primary key uniqueness and not-null
 SELECT 'customer' AS tbl, COUNT(*) AS total, COUNT(DISTINCT c_customer_sk) AS distinct_pk FROM customer
 UNION ALL

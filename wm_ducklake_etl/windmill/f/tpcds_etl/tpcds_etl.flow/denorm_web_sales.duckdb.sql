@@ -1,3 +1,6 @@
+ATTACH 'ducklake' AS dl;
+USE dl;
+
 CREATE OR REPLACE TABLE wide_web_sales AS
 SELECT
   ws.*,

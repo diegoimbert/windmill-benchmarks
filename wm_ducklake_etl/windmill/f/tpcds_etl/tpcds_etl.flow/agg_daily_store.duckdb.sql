@@ -1,3 +1,6 @@
+ATTACH 'ducklake' AS dl;
+USE dl;
+
 CREATE OR REPLACE TABLE daily_sales_by_store AS
 SELECT
   d_date,

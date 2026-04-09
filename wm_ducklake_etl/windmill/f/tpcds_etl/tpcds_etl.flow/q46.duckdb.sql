@@ -1,3 +1,6 @@
+ATTACH 'ducklake' AS dl;
+USE dl;
+
 SELECT c_last_name, c_first_name, ca_city, bought_city, ss_ticket_number, amt, profit
 FROM
   (SELECT ss_ticket_number, ss_customer_sk, ca_city bought_city,

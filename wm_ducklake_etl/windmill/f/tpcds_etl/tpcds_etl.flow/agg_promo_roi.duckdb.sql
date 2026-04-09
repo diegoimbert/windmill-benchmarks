@@ -1,3 +1,6 @@
+ATTACH 'ducklake' AS dl;
+USE dl;
+
 CREATE OR REPLACE TABLE promo_roi AS
 SELECT
   p_promo_id,

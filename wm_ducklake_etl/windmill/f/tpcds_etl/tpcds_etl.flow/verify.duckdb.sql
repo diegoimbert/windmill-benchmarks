@@ -1,3 +1,6 @@
+ATTACH 'ducklake' AS dl;
+USE dl;
+
 SELECT 'store_sales' AS tbl, COUNT(*) AS cnt FROM store_sales
 UNION ALL SELECT 'catalog_sales', COUNT(*) FROM catalog_sales
 UNION ALL SELECT 'web_sales', COUNT(*) FROM web_sales

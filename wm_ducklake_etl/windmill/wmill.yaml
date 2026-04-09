@@ -3,7 +3,7 @@ includes:
   - "f/**"
 excludes: []
 codebases: []
-skipVariables: false
-skipResources: false
-skipResourceTypes: false
+skipVariables: true
+skipResources: true
+skipResourceTypes: true
 skipSecrets: true

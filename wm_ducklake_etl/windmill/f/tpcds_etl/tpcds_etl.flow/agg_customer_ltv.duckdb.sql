@@ -1,3 +1,6 @@
+ATTACH 'ducklake' AS dl;
+USE dl;
+
 CREATE OR REPLACE TABLE customer_lifetime_value AS
 WITH store_totals AS (
   SELECT

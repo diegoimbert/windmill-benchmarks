@@ -1,3 +1,6 @@
+ATTACH 'ducklake' AS dl;
+USE dl;
+
 CREATE OR REPLACE TABLE channel_comparison AS
 WITH store_agg AS (
   SELECT d.d_year, d.d_moy,

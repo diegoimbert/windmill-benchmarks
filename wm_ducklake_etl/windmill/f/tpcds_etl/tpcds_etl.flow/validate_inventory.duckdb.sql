@@ -1,3 +1,6 @@
+ATTACH 'ducklake' AS dl;
+USE dl;
+
 SELECT
   'inventory' AS table_name,
   COUNT(*) AS total_rows,

@@ -1,3 +1,6 @@
+ATTACH 'ducklake' AS dl;
+USE dl;
+
 SELECT * FROM
   (SELECT i_category, i_class, i_brand, i_product_name, d_year, d_qoy, d_moy, s_store_id,
           sumsales, rank() OVER (PARTITION BY i_category ORDER BY sumsales DESC) rk

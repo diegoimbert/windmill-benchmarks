@@ -41,10 +41,13 @@ def read_sql(path):
         return f.read()
 
 
+DUCKLAKE_PREAMBLE = "ATTACH 'ducklake' AS dl;\nUSE dl;\n\n"
+
+
 def write_inline(name, content):
     path = os.path.join(FLOW_DIR, name)
     with open(path, "w") as f:
-        f.write(content)
+        f.write(DUCKLAKE_PREAMBLE + content)
 
 
 def main():

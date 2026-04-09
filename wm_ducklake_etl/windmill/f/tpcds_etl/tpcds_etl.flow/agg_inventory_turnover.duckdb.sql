@@ -1,3 +1,6 @@
+ATTACH 'ducklake' AS dl;
+USE dl;
+
 CREATE OR REPLACE TABLE inventory_turnover AS
 WITH avg_inventory AS (
   SELECT

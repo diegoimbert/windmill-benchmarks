@@ -1,3 +1,6 @@
+ATTACH 'ducklake' AS dl;
+USE dl;
+
 SELECT * FROM
   (SELECT i_manufact_id,
           sum(ss_sales_price) sum_sales,

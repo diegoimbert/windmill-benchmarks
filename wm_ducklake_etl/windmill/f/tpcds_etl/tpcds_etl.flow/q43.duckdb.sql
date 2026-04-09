@@ -1,3 +1,6 @@
+ATTACH 'ducklake' AS dl;
+USE dl;
+
 SELECT s_store_name, s_store_id,
        sum(CASE WHEN (d_day_name='Sunday') THEN ss_sales_price ELSE null END) sun_sales,
        sum(CASE WHEN (d_day_name='Monday') THEN ss_sales_price ELSE null END) mon_sales,

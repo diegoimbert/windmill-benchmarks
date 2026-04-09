@@ -37,14 +37,14 @@ STAGE 6: VERIFY (1 task)
 
 ## Competitors
 
-| Stack | Orchestrator | Compute | Directory |
-|-------|-------------|---------|-----------|
-| **Windmill + DuckDB** | Windmill | DuckDB (native SQL steps) | `windmill/` |
-| **Airflow + DuckDB** | Airflow | DuckDB (via Python) | `airflow_duckdb/` |
-| **Airflow + Pandas** | Airflow | Pandas | `airflow_pandas/` |
-| **Dagster + DuckDB** | Dagster | DuckDB (asset-based) | `dagster_duckdb/` |
-| **dbt + DuckDB** | dbt CLI | DuckDB (dbt-duckdb adapter) | `dbt_duckdb/` |
-| **Airflow + Snowflake** | Airflow | Snowflake (X-Small warehouse) | `snowflake/` |
+| Stack                   | Orchestrator | Compute                       | Directory         |
+| ----------------------- | ------------ | ----------------------------- | ----------------- |
+| **Windmill + DuckDB**   | Windmill     | DuckDB (native SQL steps)     | `windmill/`       |
+| **Airflow + DuckDB**    | Airflow      | DuckDB (via Python)           | `airflow_duckdb/` |
+| **Airflow + Pandas**    | Airflow      | Pandas                        | `airflow_pandas/` |
+| **Dagster + DuckDB**    | Dagster      | DuckDB (asset-based)          | `dagster_duckdb/` |
+| **dbt + DuckDB**        | dbt CLI      | DuckDB (dbt-duckdb adapter)   | `dbt_duckdb/`     |
+| **Airflow + Snowflake** | Airflow      | Snowflake (X-Small warehouse) | `snowflake/`      |
 
 ## Quick Start (Local)
 
@@ -53,7 +53,7 @@ STAGE 6: VERIFY (1 task)
 - Docker & Docker Compose
 - Python 3.11+
 - DuckDB CLI (`brew install duckdb` or `pip install duckdb`)
-- [Windmill CLI](https://www.windmill.dev/docs/advanced/cli) (`npm install -g windmill-client`)
+- [Windmill CLI](https://www.windmill.dev/docs/advanced/cli) (`npm install -g windmill-cli`)
 
 ### 1. Generate TPC-DS data
 
@@ -127,13 +127,13 @@ python scripts/generate_data.py --sf 100 --endpoint localhost:9000
 
 All self-hosted benchmarks run on identical hardware:
 
-| | Spec |
-|-|------|
-| **Instance** | m6i.4xlarge (16 vCPU, 64 GB RAM) |
-| **Storage** | gp3, 500 GB, 3000 IOPS |
-| **Region** | us-east-1 |
-| **Worker limits** | 8 CPU, 32 GB (Docker/K8s resource limits) |
-| **Orchestrator limits** | 4 CPU, 8 GB |
+|                         | Spec                                      |
+| ----------------------- | ----------------------------------------- |
+| **Instance**            | m6i.4xlarge (16 vCPU, 64 GB RAM)          |
+| **Storage**             | gp3, 500 GB, 3000 IOPS                    |
+| **Region**              | us-east-1                                 |
+| **Worker limits**       | 8 CPU, 32 GB (Docker/K8s resource limits) |
+| **Orchestrator limits** | 4 CPU, 8 GB                               |
 
 ## Measurement
 
@@ -144,13 +144,13 @@ All self-hosted benchmarks run on identical hardware:
 
 ## What We Measure
 
-| Metric | Why |
-|--------|-----|
-| **End-to-end wall-clock** | Headline number |
+| Metric                     | Why                                                             |
+| -------------------------- | --------------------------------------------------------------- |
+| **End-to-end wall-clock**  | Headline number                                                 |
 | **Orchestration overhead** | Sum of queue + transition times — where Windmill differentiates |
-| **Pure compute time** | Isolates engine performance (DuckDB vs Pandas vs Snowflake) |
-| **Cost per run** | Self-hosted = time × instance rate. Cloud = billed |
-| **Peak memory** | DuckDB efficiency vs Pandas |
+| **Pure compute time**      | Isolates engine performance (DuckDB vs Pandas vs Snowflake)     |
+| **Cost per run**           | Self-hosted = time × instance rate. Cloud = billed              |
+| **Peak memory**            | DuckDB efficiency vs Pandas                                     |
 
 ## Directory Structure
 

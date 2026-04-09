@@ -9,7 +9,7 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
     AIRFLOW__WEBSERVER__EXPOSE_CONFIG: 'true'
-    S3_ENDPOINT: minio:9000
+    S3_ENDPOINT: localhost:9000
     S3_ACCESS_KEY: minioadmin
     S3_SECRET_KEY: minioadmin
     S3_REGION: us-east-1
@@ -41,23 +41,6 @@ services:
     image: redis:7
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      retries: 5
-    restart: unless-stopped
-
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio-data:/data
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
       interval: 5s
       retries: 5
     restart: unless-stopped
@@ -102,4 +85,3 @@ services:
 
 volumes:
   postgres-data:
-  minio-data:

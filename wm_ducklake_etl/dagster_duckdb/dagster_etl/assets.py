@@ -46,200 +46,192 @@ INGEST_TABLES = [
 
 def _exec(context: AssetExecutionContext, sql: str) -> dict:
     """Execute SQL via the DuckDB resource and return the first row as metadata."""
-    duckdb_res = context.resources.duckdb
-    conn = duckdb_res.get_connection()
-    try:
-        result = conn.execute(sql).fetchall()
-        description = conn.description
-        if result and description:
-            cols = [d[0] for d in description]
-            return {cols[i]: result[0][i] for i in range(len(cols))}
-        return {"rows_returned": len(result) if result else 0}
-    finally:
-        conn.close()
+    conn = context.resources.duckdb.get_connection()
+    result = conn.execute(sql).fetchall()
+    description = conn.description
+    if result and description:
+        cols = [d[0] for d in description]
+        return {cols[i]: result[0][i] for i in range(len(cols))}
+    return {"rows_returned": len(result) if result else 0}
 
 
 def _exec_multi(context: AssetExecutionContext, sql: str) -> list[dict]:
     """Execute SQL and return all rows."""
-    duckdb_res = context.resources.duckdb
-    conn = duckdb_res.get_connection()
-    try:
-        result = conn.execute(sql).fetchall()
-        description = conn.description
-        if result and description:
-            cols = [d[0] for d in description]
-            return [{cols[i]: row[i] for i in range(len(cols))} for row in result]
-        return []
-    finally:
-        conn.close()
+    conn = context.resources.duckdb.get_connection()
+    result = conn.execute(sql).fetchall()
+    description = conn.description
+    if result and description:
+        cols = [d[0] for d in description]
+        return [{cols[i]: row[i] for i in range(len(cols))} for row in result]
+    return []
 
 
 # ===========================================================================
 # Stage 1 -- Ingest (24 assets)
 # ===========================================================================
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_store_sales(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE store_sales AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/store_sales.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_catalog_sales(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE catalog_sales AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/catalog_sales.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_web_sales(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE web_sales AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/web_sales.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_store_returns(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE store_returns AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/store_returns.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_catalog_returns(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE catalog_returns AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/catalog_returns.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_web_returns(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE web_returns AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/web_returns.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_inventory(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE inventory AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/inventory.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_customer(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE customer AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/customer.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_customer_address(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE customer_address AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/customer_address.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_customer_demographics(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE customer_demographics AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/customer_demographics.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_household_demographics(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE household_demographics AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/household_demographics.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_item(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE item AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/item.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_store(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE store AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/store.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_date_dim(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE date_dim AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/date_dim.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_time_dim(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE time_dim AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/time_dim.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_promotion(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE promotion AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/promotion.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_warehouse(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE warehouse AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/warehouse.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_catalog_page(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE catalog_page AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/catalog_page.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_web_page(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE web_page AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/web_page.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_web_site(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE web_site AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/web_site.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_call_center(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE call_center AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/call_center.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_income_band(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE income_band AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/income_band.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_reason(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE reason AS
         SELECT * FROM read_parquet('s3://bench-data/tpcds/sf100/reason.parquet');
     """)
 
-@asset(group_name="ingest")
+@asset(group_name="ingest", required_resource_keys={"duckdb"})
 def ingest_ship_mode(context: AssetExecutionContext) -> None:
     _exec(context, """
         CREATE OR REPLACE TABLE ship_mode AS
@@ -256,6 +248,7 @@ def ingest_ship_mode(context: AssetExecutionContext) -> None:
     deps=[
         ingest_store_sales, ingest_date_dim, ingest_item,
     ],
+    required_resource_keys={"duckdb"},
 )
 def validate_store_sales(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -281,6 +274,7 @@ def validate_store_sales(context: AssetExecutionContext) -> None:
     deps=[
         ingest_catalog_sales, ingest_date_dim, ingest_item,
     ],
+    required_resource_keys={"duckdb"},
 )
 def validate_catalog_sales(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -306,6 +300,7 @@ def validate_catalog_sales(context: AssetExecutionContext) -> None:
     deps=[
         ingest_web_sales, ingest_date_dim, ingest_item,
     ],
+    required_resource_keys={"duckdb"},
 )
 def validate_web_sales(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -329,6 +324,7 @@ def validate_web_sales(context: AssetExecutionContext) -> None:
 @asset(
     group_name="validate",
     deps=[ingest_store_returns],
+    required_resource_keys={"duckdb"},
 )
 def validate_store_returns(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -345,6 +341,7 @@ def validate_store_returns(context: AssetExecutionContext) -> None:
 @asset(
     group_name="validate",
     deps=[ingest_catalog_returns],
+    required_resource_keys={"duckdb"},
 )
 def validate_catalog_returns(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -361,6 +358,7 @@ def validate_catalog_returns(context: AssetExecutionContext) -> None:
 @asset(
     group_name="validate",
     deps=[ingest_web_returns],
+    required_resource_keys={"duckdb"},
 )
 def validate_web_returns(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -377,6 +375,7 @@ def validate_web_returns(context: AssetExecutionContext) -> None:
 @asset(
     group_name="validate",
     deps=[ingest_inventory],
+    required_resource_keys={"duckdb"},
 )
 def validate_inventory(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -400,6 +399,7 @@ def validate_inventory(context: AssetExecutionContext) -> None:
         ingest_web_page, ingest_web_site, ingest_call_center,
         ingest_income_band, ingest_reason, ingest_ship_mode,
     ],
+    required_resource_keys={"duckdb"},
 )
 def validate_dimensions(context: AssetExecutionContext) -> None:
     _exec_multi(context, """
@@ -449,6 +449,7 @@ def validate_dimensions(context: AssetExecutionContext) -> None:
     deps=[
         validate_store_sales, validate_dimensions,
     ],
+    required_resource_keys={"duckdb"},
 )
 def denorm_store_sales(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -477,6 +478,7 @@ def denorm_store_sales(context: AssetExecutionContext) -> None:
     deps=[
         validate_catalog_sales, validate_dimensions,
     ],
+    required_resource_keys={"duckdb"},
 )
 def denorm_catalog_sales(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -505,6 +507,7 @@ def denorm_catalog_sales(context: AssetExecutionContext) -> None:
     deps=[
         validate_web_sales, validate_dimensions,
     ],
+    required_resource_keys={"duckdb"},
 )
 def denorm_web_sales(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -538,6 +541,7 @@ def denorm_web_sales(context: AssetExecutionContext) -> None:
 @asset(
     group_name="aggregate",
     deps=[denorm_store_sales],
+    required_resource_keys={"duckdb"},
 )
 def agg_daily_store(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -563,6 +567,7 @@ def agg_daily_store(context: AssetExecutionContext) -> None:
 @asset(
     group_name="aggregate",
     deps=[denorm_store_sales],
+    required_resource_keys={"duckdb"},
 )
 def agg_monthly_category(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -590,6 +595,7 @@ def agg_monthly_category(context: AssetExecutionContext) -> None:
         ingest_customer, validate_store_sales, validate_catalog_sales,
         validate_web_sales,
     ],
+    required_resource_keys={"duckdb"},
 )
 def agg_customer_ltv(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -651,6 +657,7 @@ def agg_customer_ltv(context: AssetExecutionContext) -> None:
         ingest_date_dim, validate_store_sales, validate_catalog_sales,
         validate_web_sales,
     ],
+    required_resource_keys={"duckdb"},
 )
 def agg_channel_comparison(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -696,6 +703,7 @@ def agg_channel_comparison(context: AssetExecutionContext) -> None:
 @asset(
     group_name="aggregate",
     deps=[denorm_store_sales],
+    required_resource_keys={"duckdb"},
 )
 def agg_promo_roi(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -725,6 +733,7 @@ def agg_promo_roi(context: AssetExecutionContext) -> None:
         ingest_store_sales, ingest_store_returns, ingest_item,
         validate_store_sales, validate_store_returns,
     ],
+    required_resource_keys={"duckdb"},
 )
 def agg_return_rate(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -776,6 +785,7 @@ def agg_return_rate(context: AssetExecutionContext) -> None:
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
         agg_return_rate,
     ],
+    required_resource_keys={"duckdb"},
 )
 def query_q03(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -797,6 +807,7 @@ def query_q03(context: AssetExecutionContext) -> None:
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
         agg_return_rate,
     ],
+    required_resource_keys={"duckdb"},
 )
 def query_q07(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -827,6 +838,7 @@ def query_q07(context: AssetExecutionContext) -> None:
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
         agg_return_rate,
     ],
+    required_resource_keys={"duckdb"},
 )
 def query_q19(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -854,6 +866,7 @@ def query_q19(context: AssetExecutionContext) -> None:
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
         agg_return_rate,
     ],
+    required_resource_keys={"duckdb"},
 )
 def query_q27(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -885,6 +898,7 @@ def query_q27(context: AssetExecutionContext) -> None:
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
         agg_return_rate,
     ],
+    required_resource_keys={"duckdb"},
 )
 def query_q34(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -918,6 +932,7 @@ def query_q34(context: AssetExecutionContext) -> None:
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
         agg_return_rate,
     ],
+    required_resource_keys={"duckdb"},
 )
 def query_q43(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -947,6 +962,7 @@ def query_q43(context: AssetExecutionContext) -> None:
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
         agg_return_rate,
     ],
+    required_resource_keys={"duckdb"},
 )
 def query_q46(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -979,6 +995,7 @@ def query_q46(context: AssetExecutionContext) -> None:
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
         agg_return_rate,
     ],
+    required_resource_keys={"duckdb"},
 )
 def query_q53(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -1016,6 +1033,7 @@ def query_q53(context: AssetExecutionContext) -> None:
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
         agg_return_rate,
     ],
+    required_resource_keys={"duckdb"},
 )
 def query_q67(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -1045,6 +1063,7 @@ def query_q67(context: AssetExecutionContext) -> None:
         agg_customer_ltv, agg_channel_comparison, agg_promo_roi,
         agg_return_rate,
     ],
+    required_resource_keys={"duckdb"},
 )
 def query_q79(context: AssetExecutionContext) -> None:
     _exec(context, """
@@ -1078,6 +1097,7 @@ def query_q79(context: AssetExecutionContext) -> None:
         query_q03, query_q07, query_q19, query_q27, query_q34,
         query_q43, query_q46, query_q53, query_q67, query_q79,
     ],
+    required_resource_keys={"duckdb"},
 )
 def verify_row_counts(context: AssetExecutionContext) -> None:
     rows = _exec_multi(context, """

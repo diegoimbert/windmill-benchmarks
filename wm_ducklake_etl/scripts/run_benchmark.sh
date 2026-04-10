@@ -38,7 +38,8 @@ AIRFLOW_DAG_ID="${AIRFLOW_DAG_ID:-tpcds_etl}"
 # Dagster defaults
 DAGSTER_BASE_URL="${DAGSTER_BASE_URL:-http://localhost:3000}"
 DAGSTER_JOB="${DAGSTER_JOB:-tpcds_etl_job}"
-DAGSTER_REPO="${DAGSTER_REPO:-tpcds_etl}"
+DAGSTER_REPO="${DAGSTER_REPO:-__repository__}"
+DAGSTER_LOCATION="${DAGSTER_LOCATION:-dagster_etl.definitions}"
 
 # Snowflake defaults (Airflow-based orchestration)
 SNOWFLAKE_DAG_ID="${SNOWFLAKE_DAG_ID:-tpcds_etl_snowflake}"
@@ -181,7 +182,7 @@ run_dagster() {
 
     log "Triggering Dagster job: $DAGSTER_JOB"
     local mutation
-    mutation='mutation { launchRun(executionParams: { selector: { repositoryName: "'"$DAGSTER_REPO"'", repositoryLocationName: "'"$DAGSTER_REPO"'", jobName: "'"$DAGSTER_JOB"'" }, runConfigData: {} }) { ... on LaunchRunSuccess { run { runId } } ... on PythonError { message } } }'
+    mutation='mutation { launchRun(executionParams: { selector: { repositoryName: "'"$DAGSTER_REPO"'", repositoryLocationName: "'"$DAGSTER_LOCATION"'", jobName: "'"$DAGSTER_JOB"'" }, runConfigData: {} }) { ... on LaunchRunSuccess { run { runId } } ... on PythonError { message } } }'
 
     local response
     response=$(curl -sf -X POST "$DAGSTER_BASE_URL/graphql" \

@@ -1,7 +1,9 @@
 import os
 
 import duckdb
-from dagster import ConfigurableResource, InitResourceContext
+from dagster import ConfigurableResource
+
+_global_conn: duckdb.DuckDBPyConnection | None = None
 
 
 class DuckDBResource(ConfigurableResource):
@@ -24,6 +26,8 @@ class DuckDBResource(ConfigurableResource):
         conn.execute("SET s3_url_style = 'path';")
 
     def get_connection(self) -> duckdb.DuckDBPyConnection:
-        conn = duckdb.connect(self.database)
-        self._configure_s3(conn)
-        return conn
+        global _global_conn
+        if _global_conn is None:
+            _global_conn = duckdb.connect(self.database)
+            self._configure_s3(_global_conn)
+        return _global_conn

@@ -13,6 +13,8 @@ WORKDIR /opt/dagster/app
 
 ENV DAGSTER_HOME=/opt/dagster/dagster_home
 RUN mkdir -p $DAGSTER_HOME
+COPY dagster_home/dagster.yaml $DAGSTER_HOME/dagster.yaml
+COPY dagster_home/workspace.yaml $DAGSTER_HOME/workspace.yaml
 
 EXPOSE 3000
 

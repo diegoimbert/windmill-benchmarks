@@ -3,13 +3,31 @@ TPC-DS SF100 ETL benchmark DAG -- Airflow + Snowflake
 Six stages, ~53 tasks.  Tasks within each stage run in parallel.
 """
 
+import json
+import os
 from datetime import datetime
 
 from airflow import DAG
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.utils.task_group import TaskGroup
 
-SNOWFLAKE_CONN = "snowflake_conn_id"
+SNOWFLAKE_CONN = "snowflake_bench"
+
+# Build the connection from env vars using Airflow's env var mechanism.
+# AIRFLOW_CONN_ env vars support JSON format.
+_sf_conn = json.dumps({
+    "conn_type": "snowflake",
+    "login": os.environ.get("SNOWFLAKE_USER", ""),
+    "password": os.environ.get("SNOWFLAKE_PASSWORD", ""),
+    "schema": os.environ.get("SNOWFLAKE_SCHEMA", "PUBLIC"),
+    "extra": {
+        "account": os.environ.get("SNOWFLAKE_ACCOUNT", ""),
+        "database": os.environ.get("SNOWFLAKE_DATABASE", ""),
+        "warehouse": os.environ.get("SNOWFLAKE_WAREHOUSE", ""),
+        "role": os.environ.get("SNOWFLAKE_ROLE", ""),
+    },
+})
+os.environ["AIRFLOW_CONN_SNOWFLAKE_BENCH"] = _sf_conn
 
 # ---------------------------------------------------------------------------
 # Table lists
@@ -44,11 +62,13 @@ TABLES = [
 
 # ── SQL helpers ──────────────────────────────────────────────────────────────
 
+SOURCE_SCHEMA = "BENCHMARK.SOURCE"
+
+
 def _ingest_sql(table: str) -> str:
     return f"""
 CREATE OR REPLACE TABLE {table} AS
-SELECT * FROM @tpcds_stage/{table}.parquet
-(FILE_FORMAT => (TYPE = PARQUET));
+SELECT * FROM {SOURCE_SCHEMA}.{table};
 """
 
 

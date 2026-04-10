@@ -1,23 +1,51 @@
--- Snowflake setup for TPC-DS SF100 ETL benchmark
--- Run this once as ACCOUNTADMIN or a role with CREATE WAREHOUSE / DATABASE privileges.
+-- Snowflake setup for TPC-DS ETL benchmark
+-- Run this ONCE before benchmarking. It copies ~1% of SF10TCL into a
+-- source schema so the benchmark DAG reads from local tables (fast)
+-- instead of scanning 10 TB with sampling every run.
 
--- 1. Warehouse (XSMALL to keep costs low; benchmark measures total wall-clock time)
-CREATE WAREHOUSE IF NOT EXISTS tpcds_bench_wh
-  WAREHOUSE_SIZE = 'XSMALL'
-  AUTO_SUSPEND = 60
-  AUTO_RESUME  = TRUE
-  INITIALLY_SUSPENDED = TRUE;
+USE ROLE ACCOUNTADMIN;
 
--- 2. Database & schema
-CREATE DATABASE IF NOT EXISTS tpcds_bench;
-USE DATABASE tpcds_bench;
-CREATE SCHEMA IF NOT EXISTS etl;
-USE SCHEMA etl;
+-- 1. Database & schemas
+CREATE DATABASE IF NOT EXISTS BENCHMARK;
+USE DATABASE BENCHMARK;
+CREATE SCHEMA IF NOT EXISTS SOURCE;   -- pre-staged raw data (populated once)
+CREATE SCHEMA IF NOT EXISTS ETL;      -- benchmark writes here (wiped each run)
 
--- 3. External stage pointing to the S3 bucket with TPC-DS SF100 parquet files
-CREATE OR REPLACE STAGE tpcds_stage
-  URL = 's3://bench-data/tpcds/sf100/'
-  FILE_FORMAT = (TYPE = PARQUET);
+-- 2. Warehouse
+USE WAREHOUSE COMPUTE_WH;
 
--- 4. Activate warehouse for subsequent operations
-USE WAREHOUSE tpcds_bench_wh;
+-- 3. Copy dimension tables (small, full copy)
+CREATE OR REPLACE TABLE SOURCE.customer           AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.customer;
+CREATE OR REPLACE TABLE SOURCE.customer_address    AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.customer_address;
+CREATE OR REPLACE TABLE SOURCE.customer_demographics AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.customer_demographics;
+CREATE OR REPLACE TABLE SOURCE.household_demographics AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.household_demographics;
+CREATE OR REPLACE TABLE SOURCE.item               AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.item;
+CREATE OR REPLACE TABLE SOURCE.store              AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.store;
+CREATE OR REPLACE TABLE SOURCE.date_dim           AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.date_dim;
+CREATE OR REPLACE TABLE SOURCE.time_dim           AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.time_dim;
+CREATE OR REPLACE TABLE SOURCE.promotion          AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.promotion;
+CREATE OR REPLACE TABLE SOURCE.warehouse          AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.warehouse;
+CREATE OR REPLACE TABLE SOURCE.catalog_page       AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.catalog_page;
+CREATE OR REPLACE TABLE SOURCE.web_page           AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.web_page;
+CREATE OR REPLACE TABLE SOURCE.web_site           AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.web_site;
+CREATE OR REPLACE TABLE SOURCE.call_center        AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.call_center;
+CREATE OR REPLACE TABLE SOURCE.income_band        AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.income_band;
+CREATE OR REPLACE TABLE SOURCE.reason             AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.reason;
+CREATE OR REPLACE TABLE SOURCE.ship_mode          AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.ship_mode;
+
+-- 4. Copy fact tables with 1% sampling (~100 GB total)
+CREATE OR REPLACE TABLE SOURCE.store_sales        AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.store_sales SAMPLE (1);
+CREATE OR REPLACE TABLE SOURCE.catalog_sales      AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.catalog_sales SAMPLE (1);
+CREATE OR REPLACE TABLE SOURCE.web_sales          AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.web_sales SAMPLE (1);
+CREATE OR REPLACE TABLE SOURCE.store_returns      AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.store_returns SAMPLE (1);
+CREATE OR REPLACE TABLE SOURCE.catalog_returns    AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.catalog_returns SAMPLE (1);
+CREATE OR REPLACE TABLE SOURCE.web_returns        AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.web_returns SAMPLE (1);
+CREATE OR REPLACE TABLE SOURCE.inventory          AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.inventory SAMPLE (1);
+
+-- 5. Verify row counts
+SELECT 'store_sales' AS tbl, COUNT(*) AS cnt FROM SOURCE.store_sales
+UNION ALL SELECT 'catalog_sales', COUNT(*) FROM SOURCE.catalog_sales
+UNION ALL SELECT 'web_sales', COUNT(*) FROM SOURCE.web_sales
+UNION ALL SELECT 'customer', COUNT(*) FROM SOURCE.customer
+UNION ALL SELECT 'item', COUNT(*) FROM SOURCE.item
+ORDER BY tbl;

@@ -1,18 +1,15 @@
-version: "3.7"
-
 x-airflow-common: &airflow-common
   build: .
+  env_file: .env
   environment: &airflow-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
     AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
     AIRFLOW__CORE__FERNET_KEY: ''
-    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
-    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-    AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth"
-    # Snowflake connection — override at runtime with real credentials
-    AIRFLOW_CONN_SNOWFLAKE_CONN_ID: "snowflake://<user>:<password>@<account>/<database>/etl?warehouse=tpcds_bench_wh&role=<role>"
+    AIRFLOW__WEBSERVER__SECRET_KEY: 'bench-secret-key-change-me'
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
   volumes:
     - ./dags:/opt/airflow/dags
   depends_on:
@@ -31,23 +28,17 @@ services:
       POSTGRES_DB: airflow
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U airflow"]
-      interval: 10s
-      timeout: 5s
+      interval: 5s
       retries: 5
 
   redis:
     image: redis:7
     restart: unless-stopped
-    ports:
-      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
+      interval: 5s
       retries: 5
 
   airflow-init:
@@ -56,15 +47,20 @@ services:
     command:
       - -c
       - |
-        airflow db migrate
+        airflow db migrate &&
         airflow users create \
           --username admin \
+          --password admin \
           --firstname Admin \
           --lastname User \
           --role Admin \
-          --email admin@example.com \
-          --password admin
+          --email admin@example.com || true
     restart: "no"
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    restart: unless-stopped
 
   airflow-webserver:
     <<: *airflow-common
@@ -72,31 +68,11 @@ services:
     ports:
       - "8080:8080"
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: 2G
-
-  airflow-scheduler:
-    <<: *airflow-common
-    command: scheduler
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: 2G
 
   airflow-worker:
     <<: *airflow-common
     command: celery worker
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: "4"
-          memory: 8G
 
 volumes:
   postgres_data:

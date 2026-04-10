@@ -24,7 +24,11 @@ def parse_ts(ts_str):
 
 
 def classify_stage(task_id: str) -> str:
+    # Handle Airflow task group prefixes like "stage1_ingest.ingest_xxx"
     task_lower = task_id.lower()
+    # Strip task group prefix if present
+    if "." in task_lower:
+        task_lower = task_lower.rsplit(".", 1)[-1]
     for prefix, stage in [
         ("ingest", "ingest"),
         ("validate", "validate"),

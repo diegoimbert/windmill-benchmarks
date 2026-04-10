@@ -51,13 +51,19 @@ def main():
         password=args.pg_password,
     )
 
-    # Query completed jobs that belong to the given flow
+    # Query completed leaf jobs that belong to the given flow (recursive via parent_job)
     query = """
-        SELECT id, created_at, started_at, duration_ms
-        FROM v2_as_completed_job
-        WHERE root_job = %s
-          AND job_kind != 'flow'
-        ORDER BY created_at
+        WITH RECURSIVE descendants AS (
+            SELECT id FROM v2_as_completed_job WHERE id = %s
+            UNION ALL
+            SELECT c.id FROM v2_as_completed_job c
+            JOIN descendants d ON c.parent_job = d.id
+        )
+        SELECT j.id, j.created_at, j.started_at, j.duration_ms, j.script_path
+        FROM v2_as_completed_job j
+        JOIN descendants d ON j.id = d.id
+        WHERE j.job_kind NOT IN ('flow', 'flowpreview')
+        ORDER BY j.created_at
     """
 
     with conn.cursor() as cur:
@@ -88,7 +94,7 @@ def main():
 
     tasks = []
     for row in rows:
-        job_id, created_at, started_at, duration_ms = row
+        job_id, created_at, started_at, duration_ms, script_path = row
         created_at = created_at.replace(tzinfo=timezone.utc)
         started_at = started_at.replace(tzinfo=timezone.utc)
 
@@ -98,7 +104,8 @@ def main():
         completed_rel = started_rel + execution_time_s
         queue_time_s = started_rel - queued_at
 
-        task_id = str(job_id)
+        # Extract task name from script_path (e.g. "f/tpcds_etl/tpcds_etl/branchall-0/ingest_store_sales")
+        task_id = script_path.rsplit("/", 1)[-1] if script_path else str(job_id)
         tasks.append({
             "id": task_id,
             "stage": classify_stage(task_id),

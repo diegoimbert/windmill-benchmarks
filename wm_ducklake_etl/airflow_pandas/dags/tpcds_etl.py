@@ -1,5 +1,5 @@
 """
-TPC-DS SF1 ETL benchmark -- Airflow + Pandas edition.
+TPC-DS SF10 ETL benchmark -- Airflow + Pandas edition.
 
 Six stages:
   1. Ingest   - read 24 Parquet tables from S3, write to local Parquet
@@ -21,7 +21,7 @@ from airflow.decorators import dag, task
 
 DATA_DIR = Path(os.getenv("DATA_DIR", "/opt/airflow/data"))
 S3_BUCKET = os.getenv("S3_BUCKET", "bench-data")
-S3_PREFIX = os.getenv("S3_PREFIX", "tpcds/sf100")
+S3_PREFIX = os.getenv("S3_PREFIX", "tpcds/sf10")
 S3_ENDPOINT = os.getenv("S3_ENDPOINT", None)
 
 STORAGE_OPTIONS: dict | None = None

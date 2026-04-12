@@ -1,4 +1,4 @@
-# Airflow Helm chart values for TPC-DS SF100 Pandas benchmark
+# Airflow Helm chart values for TPC-DS SF10 Pandas benchmark
 # Chart: https://airflow.apache.org/docs/helm-chart/stable/index.html
 
 executor: KubernetesExecutor
@@ -26,7 +26,7 @@ env:
   - name: S3_BUCKET
     value: "bench-data"
   - name: S3_PREFIX
-    value: "tpcds/sf100"
+    value: "tpcds/sf10"
   - name: DATA_DIR
     value: "/opt/airflow/data"
   - name: S3_ENDPOINT

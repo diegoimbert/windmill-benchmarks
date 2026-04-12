@@ -1,5 +1,5 @@
 """
-TPC-DS SF100 ETL benchmark -- Airflow + Pandas edition.
+TPC-DS SF1 ETL benchmark -- Airflow + Pandas edition.
 
 Six stages:
   1. Ingest   - read 24 Parquet tables from S3, write to local Parquet
@@ -54,7 +54,13 @@ def _local(name: str) -> Path:
 
 
 def _read(name: str) -> pd.DataFrame:
-    return pd.read_parquet(_local(name))
+    import decimal
+    df = pd.read_parquet(_local(name))
+    # Convert Decimal columns to float to avoid arithmetic type errors
+    for col in df.columns:
+        if df[col].dtype == object and len(df) > 0 and isinstance(df[col].iloc[0], decimal.Decimal):
+            df[col] = df[col].astype(float)
+    return df
 
 
 def _write(name: str, df: pd.DataFrame) -> None:
@@ -316,11 +322,10 @@ def tpcds_etl():
         )
         for col in ["store_spend", "catalog_spend", "web_spend", "store_txns", "catalog_txns", "web_txns"]:
             ltv[col] = ltv[col].fillna(0)
-        ltv["total_spend"] = ltv["store_spend"] + ltv["catalog_spend"] + ltv["web_spend"]
-        ltv["total_transactions"] = ltv["store_txns"] + ltv["catalog_txns"] + ltv["web_txns"]
-        ltv["avg_basket_size"] = ltv.apply(
-            lambda r: r["total_spend"] / r["total_transactions"] if r["total_transactions"] > 0 else 0, axis=1
-        )
+        ltv["total_spend"] = (ltv["store_spend"] + ltv["catalog_spend"] + ltv["web_spend"]).astype(float)
+        ltv["total_transactions"] = (ltv["store_txns"] + ltv["catalog_txns"] + ltv["web_txns"]).astype(float)
+        ltv["avg_basket_size"] = ltv["total_spend"] / ltv["total_transactions"].replace(0, float("nan"))
+        ltv["avg_basket_size"] = ltv["avg_basket_size"].fillna(0)
         ltv = ltv.sort_values("total_spend", ascending=False)
         _write("customer_lifetime_value", ltv[["c_customer_sk", "c_customer_id", "c_first_name", "c_last_name",
                                                  "total_spend", "total_transactions", "store_spend", "catalog_spend",
@@ -400,8 +405,10 @@ def tpcds_etl():
         ).reset_index()
 
         result = s_agg.merge(r_agg, on=["i_category", "i_class"], how="left")
-        result["return_count"] = result["return_count"].fillna(0)
-        result["return_revenue"] = result["return_revenue"].fillna(0)
+        result["return_count"] = result["return_count"].fillna(0).astype(float)
+        result["return_revenue"] = result["return_revenue"].fillna(0).astype(float)
+        result["sale_count"] = result["sale_count"].astype(float)
+        result["sale_revenue"] = result["sale_revenue"].astype(float)
         result["return_rate_pct"] = (result["return_count"] * 100.0 / result["sale_count"]).round(2).where(result["sale_count"] > 0, 0)
         result["return_revenue_pct"] = (result["return_revenue"] * 100.0 / result["sale_revenue"]).round(2).where(result["sale_revenue"] > 0, 0)
         result = result.sort_values("return_rate_pct", ascending=False)

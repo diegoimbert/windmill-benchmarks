@@ -26,7 +26,7 @@ COMPETITOR_DISPLAY = {
     "windmill": "Windmill + DuckLake",
     "dagster": "Dagster + DuckDB",
     "snowflake": "Snowflake",
-    "airflow": "Airflow + DuckDB",
+    "airflow": "Airflow + Pandas",
 }
 
 

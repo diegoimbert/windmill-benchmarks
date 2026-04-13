@@ -210,7 +210,7 @@ resource "aws_eks_node_group" "bench" {
   instance_types = [var.node_instance_type]
 
   scaling_config {
-    min_size     = 1
+    min_size     = 0
     max_size     = 24
     desired_size = 1
   }

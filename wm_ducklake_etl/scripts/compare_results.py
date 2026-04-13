@@ -2,6 +2,7 @@
 """Compare benchmark results across competitors."""
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -25,12 +26,33 @@ STAGE_COLORS = {
 
 # Normalize stage aliases
 STAGE_ALIASES = {"queries": "query"}
-COMPETITOR_DISPLAY = {
+COMPETITOR_BASE_DISPLAY = {
     "windmill": "Windmill + DuckLake",
     "dagster": "Dagster + DuckDB",
     "snowflake": "Snowflake",
     "airflow": "Airflow + Pandas",
 }
+
+
+def env_display_name(filename_stem: str, competitor: str) -> str:
+    """Derive a human-readable environment name from the result filename.
+
+    Examples:
+        snowflake_eks_large -> Snowflake (large)
+        windmill_2x_m6i4xl_run1 -> Windmill + DuckLake (2x_m6i4xl)
+    """
+    base = COMPETITOR_BASE_DISPLAY.get(competitor, competitor)
+    # Strip the competitor prefix to get the environment suffix
+    suffix = filename_stem
+    if suffix.startswith(competitor):
+        suffix = suffix[len(competitor):]
+    # Strip leading underscores/separators
+    suffix = suffix.lstrip("_")
+    # Remove trailing _v2, _run1 etc. version suffixes
+    suffix = re.sub(r'[_-](?:v\d+|run\d+)$', '', suffix)
+    if suffix:
+        return f"{base} ({suffix})"
+    return base
 
 
 def load_results():
@@ -39,7 +61,11 @@ def load_results():
         data = json.loads(f.read_text())
         for t in data.get("tasks", []):
             t["stage"] = STAGE_ALIASES.get(t.get("stage", ""), t.get("stage", "unknown"))
-        results[data["competitor"]] = data
+        key = f.stem
+        competitor = data.get("competitor", key)
+        data["_display_name"] = env_display_name(key, competitor)
+        data["_competitor"] = competitor
+        results[key] = data
     return results
 
 
@@ -79,7 +105,7 @@ def print_summary(results):
     for comp, data in results.items():
         total = data["total_wall_clock_s"]
         rows.append({
-            "Competitor": COMPETITOR_DISPLAY.get(comp, comp),
+            "Environment": data["_display_name"],
             "Total (s)": f"{total:.1f}",
             "Total (min)": f"{total / 60:.1f}",
         })
@@ -93,12 +119,12 @@ def print_summary(results):
     stage_rows = []
     for comp, data in results.items():
         ss = stage_summary(data)
-        row = {"Competitor": COMPETITOR_DISPLAY.get(comp, comp)}
+        row = {"Environment": data["_display_name"]}
         for stage in STAGE_ORDER:
             if stage in ss:
                 row[stage.capitalize()] = f"{ss[stage]['wall_time']:.1f}"
         stage_rows.append(row)
-    stage_rows.sort(key=lambda r: r["Competitor"])
+    stage_rows.sort(key=lambda r: r["Environment"])
     df_stage = pd.DataFrame(stage_rows).fillna("-")
     print(df_stage.to_string(index=False))
 
@@ -107,22 +133,24 @@ def print_summary(results):
     exec_rows = []
     for comp, data in results.items():
         ss = stage_summary(data)
-        row = {"Competitor": COMPETITOR_DISPLAY.get(comp, comp)}
+        row = {"Environment": data["_display_name"]}
         for stage in STAGE_ORDER:
             if stage in ss:
                 row[stage.capitalize()] = f"{ss[stage]['exec_sum']:.1f}"
         exec_rows.append(row)
-    exec_rows.sort(key=lambda r: r["Competitor"])
+    exec_rows.sort(key=lambda r: r["Environment"])
     df_exec = pd.DataFrame(exec_rows).fillna("-")
     print(df_exec.to_string(index=False))
 
 
 def plot_total_comparison(results, ax):
-    competitors = sorted(results.keys(), key=lambda c: results[c]["total_wall_clock_s"])
-    names = [COMPETITOR_DISPLAY.get(c, c) for c in competitors]
-    totals = [results[c]["total_wall_clock_s"] for c in competitors]
+    keys = sorted(results.keys(), key=lambda c: results[c]["total_wall_clock_s"])
+    names = [results[c]["_display_name"] for c in keys]
+    totals = [results[c]["total_wall_clock_s"] for c in keys]
 
-    bars = ax.barh(names, totals, color=["#4CAF50" if c == "windmill" else "#78909C" for c in competitors])
+    bars = ax.barh(names, totals, color=[
+        "#4CAF50" if results[c]["_competitor"] == "windmill" else "#78909C" for c in keys
+    ])
     ax.set_xlabel("Wall-Clock Time (seconds)")
     ax.set_title("Total Pipeline Duration")
     for bar, val in zip(bars, totals):
@@ -132,19 +160,19 @@ def plot_total_comparison(results, ax):
 
 
 def plot_stage_breakdown(results, ax):
-    competitors = sorted(results.keys(), key=lambda c: results[c]["total_wall_clock_s"])
-    names = [COMPETITOR_DISPLAY.get(c, c) for c in competitors]
-    y = np.arange(len(competitors))
+    keys = sorted(results.keys(), key=lambda c: results[c]["total_wall_clock_s"])
+    names = [results[c]["_display_name"] for c in keys]
+    y = np.arange(len(keys))
 
     stage_data = {}
     for stage in STAGE_ORDER:
         vals = []
-        for c in competitors:
+        for c in keys:
             ss = stage_summary(results[c])
             vals.append(ss.get(stage, {}).get("wall_time", 0))
         stage_data[stage] = vals
 
-    lefts = np.zeros(len(competitors))
+    lefts = np.zeros(len(keys))
     for stage in STAGE_ORDER:
         vals = np.array(stage_data[stage])
         if vals.sum() == 0:
@@ -161,15 +189,15 @@ def plot_stage_breakdown(results, ax):
 
 
 def plot_gantt(results, ax):
-    """Gantt chart for each competitor showing task execution over time."""
-    competitors = sorted(results.keys(), key=lambda c: results[c]["total_wall_clock_s"])
+    """Gantt chart for each environment showing task execution over time."""
+    keys = sorted(results.keys(), key=lambda c: results[c]["total_wall_clock_s"])
     y_offset = 0
     y_ticks = []
     y_labels = []
 
-    for comp in competitors:
+    for comp in keys:
         tasks = sorted(results[comp]["tasks"], key=lambda t: t["started_at"])
-        name = COMPETITOR_DISPLAY.get(comp, comp)
+        name = results[comp]["_display_name"]
         y_ticks.append(y_offset + len(tasks) / 2)
         y_labels.append(name)
         for i, t in enumerate(tasks):

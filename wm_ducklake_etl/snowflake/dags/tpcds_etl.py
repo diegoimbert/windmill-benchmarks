@@ -25,6 +25,7 @@ _sf_conn = json.dumps({
         "database": os.environ.get("SNOWFLAKE_DATABASE", ""),
         "warehouse": os.environ.get("SNOWFLAKE_WAREHOUSE", ""),
         "role": os.environ.get("SNOWFLAKE_ROLE", ""),
+        "session_parameters": {"USE_CACHED_RESULT": False},
     },
 })
 os.environ["AIRFLOW_CONN_SNOWFLAKE_BENCH"] = _sf_conn

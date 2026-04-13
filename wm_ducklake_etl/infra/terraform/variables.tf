@@ -13,7 +13,7 @@ variable "cluster_name" {
 variable "node_instance_type" {
   description = "EC2 instance type for worker nodes"
   type        = string
-  default     = "c6i.4xlarge"
+  default     = "m6a.8xlarge"
 }
 
 variable "s3_bucket_name" {

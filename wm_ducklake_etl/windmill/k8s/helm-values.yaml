@@ -14,11 +14,11 @@ windmill:
       replicas: 1
       resources:
         requests:
-          cpu: "1"
+          cpu: "2"
           memory: 4Gi
         limits:
-          cpu: "24"
-          memory: 30Gi
+          cpu: "32"
+          memory: 100Gi
       env:
         - name: SLEEP_QUEUE
           value: "5"
@@ -34,8 +34,8 @@ windmill:
           cpu: "100m"
           memory: 256Mi
         limits:
-          cpu: "1"
-          memory: 2Gi
+          cpu: "2"
+          memory: 4Gi
 
   app:
     resources:
@@ -43,8 +43,8 @@ windmill:
         cpu: "250m"
         memory: 512Mi
       limits:
-        cpu: "1"
-        memory: 2Gi
+        cpu: "2"
+        memory: 4Gi
 
 postgresql:
   enabled: true
@@ -56,4 +56,4 @@ postgresql:
     size: 10Gi
   resources:
     limits:
-      memory: 1Gi
+      memory: 2Gi

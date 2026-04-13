@@ -146,14 +146,56 @@ resource "aws_eks_cluster" "bench" {
 }
 
 # ---------------------------------------------------------------------------
+# OIDC provider for IRSA (IAM Roles for Service Accounts)
+# ---------------------------------------------------------------------------
+data "tls_certificate" "eks" {
+  url = aws_eks_cluster.bench.identity[0].oidc[0].issuer
+}
+
+resource "aws_iam_openid_connect_provider" "eks" {
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [data.tls_certificate.eks.certificates[0].sha1_fingerprint]
+  url             = aws_eks_cluster.bench.identity[0].oidc[0].issuer
+}
+
+# ---------------------------------------------------------------------------
+# IAM role for EBS CSI driver (via IRSA)
+# ---------------------------------------------------------------------------
+resource "aws_iam_role" "ebs_csi" {
+  name = "${var.cluster_name}-ebs-csi-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Federated = aws_iam_openid_connect_provider.eks.arn
+      }
+      Action = "sts:AssumeRoleWithWebIdentity"
+      Condition = {
+        StringEquals = {
+          "${replace(aws_eks_cluster.bench.identity[0].oidc[0].issuer, "https://", "")}:sub" = "system:serviceaccount:kube-system:ebs-csi-controller-sa"
+          "${replace(aws_eks_cluster.bench.identity[0].oidc[0].issuer, "https://", "")}:aud" = "sts.amazonaws.com"
+        }
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ebs_csi_policy" {
+  role       = aws_iam_role.ebs_csi.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+}
+
+# ---------------------------------------------------------------------------
 # EBS CSI driver addon
 # ---------------------------------------------------------------------------
 resource "aws_eks_addon" "ebs_csi" {
   cluster_name             = aws_eks_cluster.bench.name
   addon_name               = "aws-ebs-csi-driver"
-  service_account_role_arn = aws_iam_role.eks_nodes.arn
+  service_account_role_arn = aws_iam_role.ebs_csi.arn
 
-  depends_on = [aws_eks_node_group.bench]
+  depends_on = [aws_eks_node_group.bench, aws_iam_role_policy_attachment.ebs_csi_policy]
 }
 
 # ---------------------------------------------------------------------------
@@ -163,14 +205,14 @@ resource "aws_eks_node_group" "bench" {
   cluster_name    = aws_eks_cluster.bench.name
   node_group_name = "${var.cluster_name}-nodes"
   node_role_arn   = aws_iam_role.eks_nodes.arn
-  subnet_ids      = aws_subnet.bench[*].id
+  subnet_ids      = [aws_subnet.bench[0].id]
 
   instance_types = [var.node_instance_type]
 
   scaling_config {
     min_size     = 1
-    max_size     = 3
-    desired_size = 2
+    max_size     = 24
+    desired_size = 1
   }
 
   labels = {
@@ -183,4 +225,60 @@ resource "aws_eks_node_group" "bench" {
     aws_iam_role_policy_attachment.node_ecr,
     aws_iam_role_policy_attachment.node_ebs,
   ]
+}
+
+# ---------------------------------------------------------------------------
+# S3 bucket for benchmark data
+# ---------------------------------------------------------------------------
+resource "aws_s3_bucket" "bench_data" {
+  bucket        = var.s3_bucket_name
+  force_destroy = true
+
+  tags = {
+    Name    = var.s3_bucket_name
+    Purpose = "benchmark"
+  }
+}
+
+resource "aws_iam_policy" "node_s3_access" {
+  name        = "${var.cluster_name}-node-s3-access"
+  description = "Allow EKS nodes full access to the benchmark S3 bucket"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:ListBucket",
+        "s3:GetBucketLocation"
+      ]
+      Resource = [
+        aws_s3_bucket.bench_data.arn,
+        "${aws_s3_bucket.bench_data.arn}/*"
+      ]
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "node_s3" {
+  role       = aws_iam_role.eks_nodes.name
+  policy_arn = aws_iam_policy.node_s3_access.arn
+}
+
+# ---------------------------------------------------------------------------
+# ECR repositories for custom Airflow images
+# ---------------------------------------------------------------------------
+resource "aws_ecr_repository" "airflow_pandas" {
+  name                 = "${var.cluster_name}/airflow-pandas"
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
+}
+
+resource "aws_ecr_repository" "airflow_snowflake" {
+  name                 = "${var.cluster_name}/airflow-snowflake"
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
 }

@@ -1,10 +1,16 @@
-# Airflow Helm chart values for TPC-DS ETL benchmark (Snowflake compute)
-# Install: helm install airflow apache-airflow/airflow -f helm-values.yaml -n bench
+# Airflow Helm chart values for TPC-DS ETL benchmark (Snowflake compute, AWS EKS)
+# Install: helm install airflow-snowflake apache-airflow/airflow --version 1.16.0 -f helm-values.yaml -n bench
 
-defaultAirflowRepository: apache/airflow
-defaultAirflowTag: "2.10.0-python3.11"
+defaultAirflowRepository: 255399219127.dkr.ecr.us-east-1.amazonaws.com/ducklake-bench/airflow-snowflake
+defaultAirflowTag: latest
 
-airflowVersion: "2.10.0"
+images:
+  airflow:
+    repository: 255399219127.dkr.ecr.us-east-1.amazonaws.com/ducklake-bench/airflow-snowflake
+    tag: latest
+    pullPolicy: Always
+
+airflowVersion: "2.10.5"
 
 executor: CeleryExecutor
 
@@ -15,70 +21,113 @@ config:
   celery:
     worker_concurrency: "16"
 
-# Snowflake connection — override with real credentials via env or secrets
-extraEnv:
-  - name: AIRFLOW_CONN_SNOWFLAKE_CONN_ID
-    value: "snowflake://<user>:<password>@<account>/tpcds_bench/etl?warehouse=tpcds_bench_wh&role=<role>"
+extraEnv: |
+  - name: SNOWFLAKE_ACCOUNT
+    valueFrom:
+      secretKeyRef:
+        name: snowflake-credentials
+        key: account
+  - name: SNOWFLAKE_USER
+    valueFrom:
+      secretKeyRef:
+        name: snowflake-credentials
+        key: user
+  - name: SNOWFLAKE_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: snowflake-credentials
+        key: password
+  - name: SNOWFLAKE_DATABASE
+    valueFrom:
+      secretKeyRef:
+        name: snowflake-credentials
+        key: database
+  - name: SNOWFLAKE_SCHEMA
+    valueFrom:
+      secretKeyRef:
+        name: snowflake-credentials
+        key: schema
+  - name: SNOWFLAKE_WAREHOUSE
+    valueFrom:
+      secretKeyRef:
+        name: snowflake-credentials
+        key: warehouse
+  - name: SNOWFLAKE_ROLE
+    valueFrom:
+      secretKeyRef:
+        name: snowflake-credentials
+        key: role
 
-# DAGs mounted from a git-sync sidecar or configmap
 dags:
+  persistence:
+    enabled: false
   gitSync:
     enabled: false
 
 workers:
   replicas: 1
   resources:
+    requests:
+      cpu: "500m"
+      memory: 2Gi
     limits:
       cpu: "4"
-      memory: 8Gi
-    requests:
-      cpu: "2"
-      memory: 4Gi
-  nodeSelector:
-    benchmark: "true"
+      memory: 16Gi
 
 scheduler:
   replicas: 1
   resources:
+    requests:
+      cpu: "250m"
+      memory: 512Mi
     limits:
       cpu: "1"
       memory: 2Gi
-    requests:
-      cpu: "500m"
-      memory: 1Gi
-  nodeSelector:
-    benchmark: "true"
 
 webserver:
   replicas: 1
   resources:
+    requests:
+      cpu: "250m"
+      memory: 512Mi
     limits:
       cpu: "1"
       memory: 2Gi
+
+triggerer:
+  replicas: 1
+  resources:
     requests:
+      cpu: "100m"
+      memory: 256Mi
+    limits:
       cpu: "500m"
-      memory: 1Gi
+      memory: 512Mi
 
 redis:
   enabled: true
   resources:
+    requests:
+      cpu: "100m"
+      memory: 128Mi
     limits:
       cpu: "500m"
       memory: 512Mi
 
 postgresql:
-  enabled: true
-  auth:
-    postgresPassword: airflow
-    database: airflow
-  primary:
-    resources:
-      limits:
-        cpu: "1"
-        memory: 2Gi
-    nodeSelector:
-      benchmark: "true"
+  enabled: false
 
-# Extra pip packages installed at worker/scheduler startup
-extraPipPackages:
-  - apache-airflow-providers-snowflake==5.7.1
+data:
+  metadataConnection:
+    user: airflow_sf
+    pass: airflow_sf
+    protocol: postgresql
+    host: airflow-postgres
+    port: 5432
+    db: airflow_sf
+
+flower:
+  enabled: false
+
+migrateDatabaseJob:
+  enabled: true

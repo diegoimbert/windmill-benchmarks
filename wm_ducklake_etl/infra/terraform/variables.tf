@@ -13,5 +13,11 @@ variable "cluster_name" {
 variable "node_instance_type" {
   description = "EC2 instance type for worker nodes"
   type        = string
-  default     = "m6i.4xlarge"
+  default     = "c6i.4xlarge"
+}
+
+variable "s3_bucket_name" {
+  description = "S3 bucket for benchmark data (TPC-DS parquet files)"
+  type        = string
+  default     = "ducklake-bench-data"
 }

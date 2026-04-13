@@ -1,18 +1,18 @@
-# Airflow Helm chart values for TPC-DS SF10 Pandas benchmark
+# Airflow Helm chart values for TPC-DS SF10 Pandas benchmark (AWS EKS)
 # Chart: https://airflow.apache.org/docs/helm-chart/stable/index.html
 
 executor: KubernetesExecutor
 
-defaultAirflowRepository: airflow-pandas-bench
+defaultAirflowRepository: 255399219127.dkr.ecr.us-east-1.amazonaws.com/ducklake-bench/airflow-pandas
 defaultAirflowTag: latest
 
 images:
   airflow:
-    repository: airflow-pandas-bench
+    repository: 255399219127.dkr.ecr.us-east-1.amazonaws.com/ducklake-bench/airflow-pandas
     tag: latest
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
 
-airflowVersion: "2.10.0"
+airflowVersion: "2.10.5"
 
 config:
   core:
@@ -24,117 +24,85 @@ config:
 
 env:
   - name: S3_BUCKET
-    value: "bench-data"
+    value: "ducklake-bench-data"
   - name: S3_PREFIX
     value: "tpcds/sf10"
   - name: DATA_DIR
     value: "/opt/airflow/data"
-  - name: S3_ENDPOINT
-    value: "http://minio:9000"
+  - name: AWS_DEFAULT_REGION
+    value: "us-east-1"
+
+extraEnv: |
   - name: AWS_ACCESS_KEY_ID
     valueFrom:
       secretKeyRef:
-        name: airflow-s3-credentials
+        name: aws-credentials
         key: access-key
   - name: AWS_SECRET_ACCESS_KEY
     valueFrom:
       secretKeyRef:
-        name: airflow-s3-credentials
+        name: aws-credentials
         key: secret-key
 
 webserver:
   replicas: 1
   resources:
     requests:
+      cpu: "250m"
+      memory: 512Mi
+    limits:
       cpu: "1"
       memory: 2Gi
-    limits:
-      cpu: "2"
-      memory: 4Gi
   service:
     type: ClusterIP
-    ports:
-      - name: airflow-ui
-        port: 8080
 
 scheduler:
   replicas: 1
   resources:
     requests:
+      cpu: "250m"
+      memory: 512Mi
+    limits:
       cpu: "1"
       memory: 2Gi
-    limits:
-      cpu: "2"
-      memory: 4Gi
 
 workers:
-  replicas: 1
-  resources:
-    requests:
-      cpu: "4"
-      memory: 16Gi
-    limits:
-      cpu: "8"
-      memory: 32Gi
-  persistence:
-    enabled: true
-    size: 100Gi
-    storageClassName: ""
+  replicas: 0
 
 triggerer:
   replicas: 1
   resources:
     requests:
-      cpu: "0.5"
-      memory: 512Mi
+      cpu: "100m"
+      memory: 256Mi
     limits:
-      cpu: "1"
-      memory: 1Gi
-
-# KubernetesExecutor pod template defaults
-kubernetes:
-  podTemplate:
-    resources:
-      requests:
-        cpu: "4"
-        memory: 16Gi
-      limits:
-        cpu: "8"
-        memory: 32Gi
-    volumes:
-      - name: airflow-data
-        persistentVolumeClaim:
-          claimName: airflow-data-pvc
-    volumeMounts:
-      - name: airflow-data
-        mountPath: /opt/airflow/data
+      cpu: "500m"
+      memory: 512Mi
 
 dags:
   persistence:
-    enabled: true
-    size: 5Gi
-    accessMode: ReadWriteMany
+    enabled: false
   gitSync:
     enabled: false
 
 postgresql:
-  enabled: true
-  auth:
-    postgresPassword: airflow
-    database: airflow
+  enabled: false
+
+data:
+  metadataConnection:
+    user: airflow
+    pass: airflow
+    protocol: postgresql
+    host: airflow-postgres
+    port: 5432
+    db: airflow
 
 redis:
-  enabled: false  # Not needed for KubernetesExecutor
+  enabled: false
 
 flower:
-  enabled: false  # Not needed for KubernetesExecutor
+  enabled: false
 
-# Shared data volume for parquet files
-extraVolumes:
-  - name: airflow-data
-    persistentVolumeClaim:
-      claimName: airflow-data-pvc
+migrateDatabaseJob:
+  enabled: false
 
-extraVolumeMounts:
-  - name: airflow-data
-    mountPath: /opt/airflow/data

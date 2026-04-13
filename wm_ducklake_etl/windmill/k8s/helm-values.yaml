@@ -1,40 +1,59 @@
-# Windmill Helm chart values for TPC-DS ETL benchmark
+# Windmill Helm chart values for TPC-DS ETL benchmark (AWS EKS)
 # Install: helm install windmill windmill/windmill -f helm-values.yaml -n bench
 
 windmill:
-  image: ghcr.io/windmill-labs/windmill-ee:main
+  image: ghcr.io/windmill-labs/windmill-ee
+  tag: main
   databaseUrl: postgres://postgres:changeme@windmill-postgresql:5432/windmill?sslmode=disable
+  appReplicas: 1
+  extraReplicas: 0
+  multiplayerReplicas: 0
 
-  server:
-    replicas: 1
-    resources:
-      limits:
-        cpu: "4"
-        memory: 8Gi
-    nodeSelector:
-      benchmark: "true"
-
-  workers:
-    default:
+  workerGroups:
+    - name: "default"
       replicas: 1
       resources:
+        requests:
+          cpu: "1"
+          memory: 4Gi
         limits:
-          cpu: "8"
-          memory: 32Gi
-      nodeSelector:
-        benchmark: "true"
+          cpu: "24"
+          memory: 30Gi
       env:
-        SLEEP_QUEUE: "5"
+        - name: SLEEP_QUEUE
+          value: "5"
+        - name: S3_BUCKET
+          value: "ducklake-bench-data"
+        - name: AWS_DEFAULT_REGION
+          value: "us-east-1"
+
+    - name: "native"
+      replicas: 1
+      resources:
+        requests:
+          cpu: "100m"
+          memory: 256Mi
+        limits:
+          cpu: "1"
+          memory: 2Gi
+
+  app:
+    resources:
+      requests:
+        cpu: "250m"
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 2Gi
 
 postgresql:
   enabled: true
   auth:
     postgresPassword: changeme
     database: windmill
-  primary:
-    resources:
-      limits:
-        cpu: "2"
-        memory: 4Gi
-    nodeSelector:
-      benchmark: "true"
+  persistence:
+    enabled: true
+    size: 10Gi
+  resources:
+    limits:
+      memory: 1Gi

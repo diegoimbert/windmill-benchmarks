@@ -22,6 +22,9 @@ STAGE_COLORS = {
     "verify": "#607D8B",
     "unknown": "#607D8B",
 }
+
+# Normalize stage aliases
+STAGE_ALIASES = {"queries": "query"}
 COMPETITOR_DISPLAY = {
     "windmill": "Windmill + DuckLake",
     "dagster": "Dagster + DuckDB",
@@ -34,6 +37,8 @@ def load_results():
     results = {}
     for f in sorted(RESULTS_DIR.glob("*.json")):
         data = json.loads(f.read_text())
+        for t in data.get("tasks", []):
+            t["stage"] = STAGE_ALIASES.get(t.get("stage", ""), t.get("stage", "unknown"))
         results[data["competitor"]] = data
     return results
 

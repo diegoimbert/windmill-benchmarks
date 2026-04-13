@@ -17,8 +17,8 @@ import time
 def main():
     parser = argparse.ArgumentParser(description="Generate TPC-DS data and upload to S3/MinIO")
     parser.add_argument("--sf", type=int, default=100, help="TPC-DS scale factor (default: 100)")
-    parser.add_argument("--endpoint", default="localhost:9000", help="S3/MinIO endpoint")
-    parser.add_argument("--bucket", default="bench-data", help="S3 bucket name")
+    parser.add_argument("--endpoint", default=None, help="S3/MinIO endpoint (omit for real AWS S3)")
+    parser.add_argument("--bucket", default="ducklake-bench-data", help="S3 bucket name")
     parser.add_argument("--access-key", default=os.environ.get("S3_ACCESS_KEY", "minioadmin"))
     parser.add_argument("--secret-key", default=os.environ.get("S3_SECRET_KEY", "minioadmin"))
     parser.add_argument("--region", default=os.environ.get("S3_REGION", "us-east-1"))
@@ -70,19 +70,19 @@ def main():
     })
 
     # Create bucket if it doesn't exist
-    subprocess.run(
-        ["aws", "s3", "mb", f"s3://{args.bucket}",
-         "--endpoint-url", f"http://{args.endpoint}"],
-        env=upload_env, capture_output=True
-    )
+    mb_cmd = ["aws", "s3", "mb", f"s3://{args.bucket}"]
+    if args.endpoint:
+        mb_cmd += ["--endpoint-url", f"http://{args.endpoint}"]
+    subprocess.run(mb_cmd, env=upload_env, capture_output=True)
 
     # Upload all parquet files
-    result = subprocess.run(
-        ["aws", "s3", "sync", output_dir, f"s3://{args.bucket}/{s3_prefix}/",
-         "--endpoint-url", f"http://{args.endpoint}",
-         "--exclude", "*", "--include", "*.parquet"],
-        env=upload_env, capture_output=True, text=True
-    )
+    sync_cmd = [
+        "aws", "s3", "sync", output_dir, f"s3://{args.bucket}/{s3_prefix}/",
+        "--exclude", "*", "--include", "*.parquet",
+    ]
+    if args.endpoint:
+        sync_cmd += ["--endpoint-url", f"http://{args.endpoint}"]
+    result = subprocess.run(sync_cmd, env=upload_env, capture_output=True, text=True)
     if result.returncode != 0:
         print(f"ERROR uploading: {result.stderr}", file=sys.stderr)
         sys.exit(1)
